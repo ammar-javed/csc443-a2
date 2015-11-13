@@ -1,4 +1,4 @@
-#include <cstdio>
+#include "stdio.h"
 #include <vector>
 #include <iostream>
 #include "string.h"
@@ -36,8 +36,38 @@ void fixed_len_write(Record *record, void *buf) {
  * Deserializes `size` bytes from the buffer, `buf`, and
  * stores the record in `record`.
  */
-void fixed_len_read(void *buf, int size, Record *record);
+void fixed_len_read(void *buf, int size, Record *record) {
+    char* attribute;
+    int read = 0;
+    
+    while (read != size) {
+        attribute = new char[11];
+        attribute[10] = '\0';
+        memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
+        read += ATTRIBUTE_SIZE;
+        (*record).push_back(attribute);
+    }
+}
 
+/**
+ * Run unit tests of functions
+ *
+ */
+void run_tests() {
+
+    Record testRec (10, "0123456789");
+    int size = fixed_len_sizeof(&testRec);
+    cout << "The size of testRec(should be 50): " << size << endl;
+
+    char buf[100] = {'\0'};
+    fixed_len_write(&testRec, buf);
+    cout << "Contents of the serialized buffer: " << buf << endl;
+
+    Record* testReadBuf = new Record ;
+    fixed_len_read(buf, 50, testReadBuf);
+    cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
+    delete testReadBuf; 
+}
 
 int main(int argc, char** argv) {
     
@@ -46,14 +76,8 @@ int main(int argc, char** argv) {
         cout << "write_fixed_len_pages <csv_file> <page_file> <page_size> [-v verbose]" << endl;
 	    return EXIT_FAILURE;
     }    
-
-    Record testRec (5, "0123456789");
-    int size = fixed_len_sizeof(&testRec);
-    cout << size << endl;
-
-    char buf[50] = {'\0'};
-    fixed_len_write(&testRec, buf);
-    cout << buf << endl;
+	
+	run_tests();
     return EXIT_SUCCESS;
 
 }
