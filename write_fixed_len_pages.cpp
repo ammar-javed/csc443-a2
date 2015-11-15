@@ -2,25 +2,7 @@
 #include <vector>
 #include <iostream>
 #include "string.h"
-using namespace std;
-
-#define NUM_ATTRIBUTES 100
-#define ATTRIBUTE_SIZE 10
-
-typedef const char* V;
-typedef vector<V> Record;
-
-// Vector Iterator
-vector<V>::iterator attr;
-
-// Page Struct
-typedef struct {
-    int total_slots;
-    int slots_used;
-    int page_size;
-    int slot_size;
-    vector<Record*>* records;
-} Page;
+#include "wflp.hpp"
 
 // Global verbose setting
 bool verbose = false;
@@ -61,7 +43,7 @@ void fixed_len_read(void *buf, int size, Record *record) {
         (*record).push_back(attribute);
     }
 }
-
+ 
 /**
  * Initializes a page using the given slot size
  */
@@ -70,7 +52,7 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
     (*page)->page_size = page_size;
     (*page)->slot_size = slot_size;
     (*page)->slots_used = 0;
-    (*page)->total_slots = page_size / slot_size;
+    (*page)->total_slots = fixed_len_page_capacity(*page);
     (*page)->records = new vector<Record*>;
   
     if (verbose) {
@@ -90,8 +72,10 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
 /**
  * Calculates the maximal number of records that fit in a page
  */
-int fixed_len_page_capacity(Page *page);
- 
+int fixed_len_page_capacity(Page *page) {
+	return page->page_size / page->slot_size;
+}
+
 /**
  * Calculate the free space (number of free slots) in the page
  */
