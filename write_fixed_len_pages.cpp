@@ -55,15 +55,7 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
     (*page)->total_slots = fixed_len_page_capacity(*page);
     (*page)->records = new vector<Record*>;
   
-    if (verbose) {
-        cout << "\n==New Page==" << endl;
-        cout << "page_size: " << (*page)->page_size << endl;
-        cout << "slot_size: " << (*page)->slot_size << endl;
-        cout << "slots_used: " << (*page)->slots_used << endl;
-        cout << "total_slots: " << (*page)->total_slots << endl;
-        cout << "records: " << (*page)->records->size() << endl;
-    }
-    
+   
     for (int i = 0; i < (*page)->total_slots; i++) {
         (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "\0")); 
     }	
@@ -105,47 +97,81 @@ void read_fixed_len_page(Page *page, int slot, Record *r);
  */
 void run_tests(int page_size, int slot_size) {
 
+    if (verbose) {
+		cout << "\n== Testing fixed_len_sizeof ==" << endl;
+    }
+
     Record testRec (10, "0123456789");
     int size = fixed_len_sizeof(&testRec);
     if (verbose)
       cout << "The size of testRec(should be 100): " << size << endl;
+
+    if (verbose) {
+		cout << "\n== Testing fixed_len_write ==" << endl;
+        cout << "The buffer should contain 10 repetitions of 0123456789" << endl;
+    }
 
     char buf[100] = {'\0'};
     fixed_len_write(&testRec, buf);
     if (verbose)
       cout << "Contents of the serialized buffer: " << buf << endl;
 
+    if (verbose) {
+		cout << "\n== Testing fixed_len_write ==" << endl;
+        cout << "Size should be 50 bytes" << endl;
+    }
     Record* testReadBuf = new Record ;
     fixed_len_read(buf, 50, testReadBuf);
     if (verbose)
       cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
     delete testReadBuf; 
 
+    if (verbose) {
+		cout << "\n== Testing init_fixed_len_page ==" <<endl;
+        cout << "We will be initializing a new page and its internal directory." << endl;
+    }
     Page* page;
     init_fixed_len_page(&page, page_size, slot_size);
 
     if (verbose) {
-        cout << page->page_size << endl;
-        cout << page->records->size() << endl;
+       cout << "\n==New Page==" << endl;
+       cout << "page_size: " << page->page_size << endl;
+       cout << "slot_size: " << page->slot_size << endl;
+       cout << "slots_used: " << page->slots_used << endl;
+       cout << "total_slots: " << page->total_slots << endl;
+       cout << "records: " << page->records->size() << endl;
+
+       cout << "    == Testing First Record ==" << endl;
     }
 
-    Record first_record = (*(*(page->records))[0]);
+    Record *first_record = (*(page->records))[0];
     
     if (verbose) {
-        cout << first_record.size() << endl;
+        cout << "    Size of first record: " << first_record->size() << endl;
+        cout << "\n    Inserting 'Yoo!' into first record..." << endl;
     }
     
-    first_record[0] = "Yoo!";
+    (*first_record)[0] = "Yoo!";
     
     if (verbose) {
-        cout << first_record.front() << endl;
+        cout << "    First attribute in First record now points to: " << first_record->front() << endl;
+        cout << "    Size of First record variable is: " << fixed_len_sizeof(first_record) << endl;
+        cout << "    Size of First record through registry is: ";
         cout << fixed_len_sizeof(page->records->operator[](0)) << endl;
     }
 
     for (int i = 0; i < page->total_slots; i++) {
+        if (verbose)
+			cout << "Freeing record: " << i+1 << endl;
         delete page->records->at(i);
     }
+
+    if (verbose)
+        cout << "Freeing Directory" << endl;
     delete page->records;
+
+    if (verbose)
+        cout << "Freeing Page" << endl;
     delete page;
 }
 
