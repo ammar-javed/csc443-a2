@@ -12,6 +12,18 @@ typedef std::vector<V> Record;
 // Vector Iterator
 std::vector<V>::iterator attr;
 
+// Page Struct
+typedef struct {
+    Record *records;
+    int total_slots;
+    int slots_used;
+    int page_size;
+    int slot_size;
+} Page;
+
+// Global verbose setting
+bool verbose = false;
+
 /**
  * Compute the number of bytes required to serialize record
  */
@@ -57,15 +69,18 @@ void run_tests() {
 
     Record testRec (10, "0123456789");
     int size = fixed_len_sizeof(&testRec);
-    cout << "The size of testRec(should be 50): " << size << endl;
+    if (verbose)
+      cout << "The size of testRec(should be 100): " << size << endl;
 
     char buf[100] = {'\0'};
     fixed_len_write(&testRec, buf);
-    cout << "Contents of the serialized buffer: " << buf << endl;
+    if (verbose)
+      cout << "Contents of the serialized buffer: " << buf << endl;
 
     Record* testReadBuf = new Record ;
     fixed_len_read(buf, 50, testReadBuf);
-    cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
+    if (verbose)
+      cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
     delete testReadBuf; 
 }
 
@@ -75,8 +90,13 @@ int main(int argc, char** argv) {
 	    cout << "ERROR: Invalid number of arguments. Please use the following format:" << endl;
         cout << "write_fixed_len_pages <csv_file> <page_file> <page_size> [-v verbose]" << endl;
 	    return EXIT_FAILURE;
-    }    
-	
+    }
+
+    // Check if verbose flag is found
+    if (argc == 5 && strcmp(argv[4], "-v") == 0) {
+       verbose = true;
+    }	
+
 	run_tests();
     return EXIT_SUCCESS;
 
