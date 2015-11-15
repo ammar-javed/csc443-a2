@@ -65,13 +65,15 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
  * Calculates the maximal number of records that fit in a page
  */
 int fixed_len_page_capacity(Page *page) {
-	return page->page_size / page->slot_size;
+    return page->page_size / page->slot_size;
 }
 
 /**
  * Calculate the free space (number of free slots) in the page
  */
-int fixed_len_page_freeslots(Page *page);
+int fixed_len_page_freeslots(Page *page) {
+    return page->total_slots - page->slots_used; 
+}
  
 /**
  * Add a record to the page
@@ -79,17 +81,30 @@ int fixed_len_page_freeslots(Page *page);
  *   record slot offset if successful,
  *   -1 if unsuccessful (page full)
  */
-int add_fixed_len_page(Page *page, Record *r);
+int add_fixed_len_page(Page *page, Record *r) {
+    if (fixed_len_page_freeslots(page) <= 0){
+	return -1; 	// No more free slots available
+    }
+    
+    // Assuming that first slot available is at index page->slots_used
+    return page->slots_used;
+}
  
 /**
  * Write a record into a given slot.
  */
-void write_fixed_len_page(Page *page, int slot, Record *r);
+void write_fixed_len_page(Page *page, int slot, Record *r){
+    
+    vector<Record*> records = *(page->records);
+    records[slot] = r;
+}
  
 /**
  * Read a record from the page from a given slot.
  */
-void read_fixed_len_page(Page *page, int slot, Record *r);
+void read_fixed_len_page(Page *page, int slot, Record *r){
+    r = (*(page->records))[slot];   
+}
 
 /**
  * Run unit tests of functions
