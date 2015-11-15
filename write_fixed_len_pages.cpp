@@ -4,21 +4,22 @@
 #include "string.h"
 using namespace std;
 
-typedef const char* V;
-typedef std::vector<V> Record;
 #define NUM_ATTRIBUTES 100
 #define ATTRIBUTE_SIZE 10
 
+typedef const char* V;
+typedef vector<V> Record;
+
 // Vector Iterator
-std::vector<V>::iterator attr;
+vector<V>::iterator attr;
 
 // Page Struct
 typedef struct {
-    Record *records;
     int total_slots;
     int slots_used;
     int page_size;
     int slot_size;
+    vector<Record*>* records;
 } Page;
 
 // Global verbose setting
@@ -62,10 +63,63 @@ void fixed_len_read(void *buf, int size, Record *record) {
 }
 
 /**
+ * Initializes a page using the given slot size
+ */
+void init_fixed_len_page(Page **page, int page_size, int slot_size){
+    *page = new Page;
+    (*page)->page_size = page_size;
+    (*page)->slot_size = slot_size;
+    (*page)->slots_used = 0;
+    (*page)->total_slots = page_size / slot_size;
+    (*page)->records = new vector<Record*>;
+  
+    if (verbose) {
+        cout << "\n==New Page==" << endl;
+        cout << "page_size: " << (*page)->page_size << endl;
+        cout << "slot_size: " << (*page)->slot_size << endl;
+        cout << "slots_used: " << (*page)->slots_used << endl;
+        cout << "total_slots: " << (*page)->total_slots << endl;
+        cout << "records: " << (*page)->records->size() << endl;
+    }
+    
+    for (int i = 0; i < (*page)->total_slots; i++) {
+        (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "\0")); 
+    }	
+}
+ 
+/**
+ * Calculates the maximal number of records that fit in a page
+ */
+int fixed_len_page_capacity(Page *page);
+ 
+/**
+ * Calculate the free space (number of free slots) in the page
+ */
+int fixed_len_page_freeslots(Page *page);
+ 
+/**
+ * Add a record to the page
+ * Returns:
+ *   record slot offset if successful,
+ *   -1 if unsuccessful (page full)
+ */
+int add_fixed_len_page(Page *page, Record *r);
+ 
+/**
+ * Write a record into a given slot.
+ */
+void write_fixed_len_page(Page *page, int slot, Record *r);
+ 
+/**
+ * Read a record from the page from a given slot.
+ */
+void read_fixed_len_page(Page *page, int slot, Record *r);
+
+/**
  * Run unit tests of functions
  *
  */
-void run_tests() {
+void run_tests(int page_size, int slot_size) {
 
     Record testRec (10, "0123456789");
     int size = fixed_len_sizeof(&testRec);
@@ -82,6 +136,33 @@ void run_tests() {
     if (verbose)
       cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
     delete testReadBuf; 
+
+    Page* page;
+    init_fixed_len_page(&page, page_size, slot_size);
+
+    if (verbose) {
+        cout << page->page_size << endl;
+        cout << page->records->size() << endl;
+    }
+
+    Record first_record = (*(*(page->records))[0]);
+    
+    if (verbose) {
+        cout << first_record.size() << endl;
+    }
+    
+    first_record[0] = "Yoo!";
+    
+    if (verbose) {
+        cout << first_record.front() << endl;
+        cout << fixed_len_sizeof(page->records->operator[](0)) << endl;
+    }
+
+    for (int i = 0; i < page->total_slots; i++) {
+        delete page->records->at(i);
+    }
+    delete page->records;
+    delete page;
 }
 
 int main(int argc, char** argv) {
@@ -97,7 +178,8 @@ int main(int argc, char** argv) {
        verbose = true;
     }	
 
-	run_tests();
+	run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
+
     return EXIT_SUCCESS;
 
 }
