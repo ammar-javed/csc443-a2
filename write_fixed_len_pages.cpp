@@ -3,6 +3,7 @@
 #include <iostream>
 #include "string.h"
 #include "wflp.hpp"
+#include <fstream>
 
 // Global verbose setting
 bool verbose = false;
@@ -24,6 +25,7 @@ int fixed_len_sizeof(Record *record){
 void fixed_len_write(Record *record, void *buf) {
     for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
         strcat((char *)buf, (*attr));
+        strcat((char *)buf, ",");
     } 
 }
 
@@ -35,11 +37,11 @@ void fixed_len_read(void *buf, int size, Record *record) {
     char* attribute;
     int read = 0;
     
-    while (read != size) {
+    while (read < size) {
         attribute = new char[11];
-        attribute[10] = '\0';
         memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
-        read += ATTRIBUTE_SIZE;
+        attribute[10] = '\0';
+        read += ATTRIBUTE_SIZE + sizeof(char);
         (*record).push_back(attribute);
     }
 }
@@ -123,10 +125,10 @@ void run_tests(int page_size, int slot_size) {
 
     if (verbose) {
 		cout << "\n== Testing fixed_len_write ==" << endl;
-        cout << "The buffer should contain 10 repetitions of 0123456789" << endl;
+        cout << "The buffer should contain 10 repetitions of '0123456789,'" << endl;
     }
 
-    char buf[100] = {'\0'};
+    char buf[100+9] = {'\0'};
     fixed_len_write(&testRec, buf);
     if (verbose)
       cout << "Contents of the serialized buffer: " << buf << endl;
@@ -136,7 +138,7 @@ void run_tests(int page_size, int slot_size) {
         cout << "Size should be 50 bytes" << endl;
     }
     Record* testReadBuf = new Record ;
-    fixed_len_read(buf, 50, testReadBuf);
+    fixed_len_read(buf, 50+4, testReadBuf);
     if (verbose)
       cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
     delete testReadBuf; 
@@ -205,6 +207,9 @@ int main(int argc, char** argv) {
 
 	run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
 
+    ofstream fout(argv[2], ios::binary);    
+
+    fout.close();
     return EXIT_SUCCESS;
 
 }
