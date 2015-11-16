@@ -1,3 +1,5 @@
+#include <cstdint>
+
 using namespace std;
 
 #define NUM_ATTRIBUTES 100
@@ -11,10 +13,10 @@ vector<V>::iterator attr;
 
 // Page Struct
 typedef struct {
-    int total_slots;
-    int slots_used;
-    int page_size;
-    int slot_size;
+    int64_t total_slots;
+    int64_t slots_used;
+    int64_t page_size;
+    int64_t slot_size;
     vector<Record*>* records;
 } Page;
 

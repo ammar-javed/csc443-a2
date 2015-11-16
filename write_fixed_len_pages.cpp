@@ -25,15 +25,16 @@ int fixed_len_sizeof(Record *record){
 void fixed_len_write(Record *record, void *buf) {
     for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
         strcat((char *)buf, (*attr));
-        strcat((char *)buf, ",");
     } 
 }
 
 /**
  * Deserializes `size` bytes from the buffer, `buf`, and
- * stores the record in `record`.
+ * stores the record in `record`. If we are reading from
+ * a CSV file instead of a page, account for the ',' read
+ * in and ignored.
  */
-void fixed_len_read(void *buf, int size, Record *record) {
+void fixed_len_read(void *buf, int size, Record *record, int csv) {
     char* attribute;
     int read = 0;
     
@@ -41,7 +42,9 @@ void fixed_len_read(void *buf, int size, Record *record) {
         attribute = new char[11];
         memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
         attribute[10] = '\0';
-        read += ATTRIBUTE_SIZE + sizeof(char);
+        read += ATTRIBUTE_SIZE;
+        if (csv)
+            read += sizeof(char);
         (*record).push_back(attribute);
     }
 }
@@ -125,10 +128,10 @@ void run_tests(int page_size, int slot_size) {
 
     if (verbose) {
 		cout << "\n== Testing fixed_len_write ==" << endl;
-        cout << "The buffer should contain 10 repetitions of '0123456789,'" << endl;
+        cout << "The buffer should contain 10 repetitions of '0123456789'" << endl;
     }
 
-    char buf[100+9] = {'\0'};
+    char buf[100] = {'\0'};
     fixed_len_write(&testRec, buf);
     if (verbose)
       cout << "Contents of the serialized buffer: " << buf << endl;
@@ -137,8 +140,8 @@ void run_tests(int page_size, int slot_size) {
 		cout << "\n== Testing fixed_len_write ==" << endl;
         cout << "Size should be 50 bytes" << endl;
     }
-    Record* testReadBuf = new Record ;
-    fixed_len_read(buf, 50+4, testReadBuf);
+    Record* testReadBuf = new Record;
+    fixed_len_read(buf, 50, testReadBuf, 0);
     if (verbose)
       cout << "Size of record: " << fixed_len_sizeof(testReadBuf) << endl;
     delete testReadBuf; 
@@ -146,8 +149,18 @@ void run_tests(int page_size, int slot_size) {
     if (verbose) {
 		cout << "\n== Testing init_fixed_len_page ==" <<endl;
         cout << "We will be initializing a new page and its internal directory." << endl;
-    }
+	}
     Page* page;
+    
+    if (verbose) {
+		cout << "Size of Page Struct: " << sizeof(*page) << endl;
+	    cout << "Size of Page.total_slots: " << sizeof(page->total_slots) << endl;
+    	cout << "Size of Page.slots_used: " << sizeof(page->slots_used) << endl;
+	    cout << "Size of Page.page_size: " << sizeof(page->page_size) << endl;
+    	cout << "Size of Page.slot_size: " << sizeof(page->slot_size) << endl;
+	    cout << "Size of Page.records: " << sizeof(page->records) << endl;
+	}
+
     init_fixed_len_page(&page, page_size, slot_size);
 
     if (verbose) {
@@ -207,9 +220,26 @@ int main(int argc, char** argv) {
 
 	run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
 
-    ofstream fout(argv[2], ios::binary);    
+    // We will read in 1 record at a time:
+    // (100 * 10) + (100 -1) to account for the commas in the csv file
+    int record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES - 1);
 
-    fout.close();
+    char * buffer  = new char[record_size_csv];
+
+    ofstream binout (argv[2], ios::binary);    
+    ofstream csvin (argv[1]);
+   
+    //if ( csvin.is_open() && binout.is_open() ) {
+
+    //	while ( csvin.read(buffer, record_size_csv) ) {
+			
+	//	}
+
+    //} 
+
+    csvin.close();
+    binout.close();
+    delete[] buffer;
     return EXIT_SUCCESS;
 
 }
