@@ -22,10 +22,10 @@ int fixed_len_sizeof(Record *record){
 /**
  * Serialize the record to a byte array to be stored in buf.
  */
-void fixed_len_write(Record *record, void *buf) {
+void fixed_len_write(Record *record, char *buf) {
     for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
-        strcat((char *)buf, (*attr));
-    } 
+        strcat(buf, (*attr));
+    }
 }
 
 /**
@@ -100,9 +100,9 @@ int add_fixed_len_page(Page *page, Record *r) {
  */
 void write_fixed_len_page(Page *page, int slot, Record *r){
     
-    vector<Record*> records = *(page->records);
-    delete records[slot];
-    records[slot] = r;
+    vector<Record*>* records = page->records;
+    delete (*records)[slot];
+    (*records)[slot] = r;
 	page->slots_used++;
 
 }
@@ -240,17 +240,19 @@ int main(int argc, char** argv) {
     char* buffer  = new char[record_size_csv];
     Page* page;
     int slot;
-    char* outBuffer = 0;
 
 	init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE); 
 
-    ofstream binout (argv[2], ios::binary);    
+    char* outBuffer = new char[page->page_size];
+    outBuffer[0] = '\0';
+
+    ofstream binout (argv[2], ios::binary | ios::app);    
     ifstream csvin (argv[1]);
    
     if ( csvin.is_open() && binout.is_open() ) {
 
     	while ( csvin.read(buffer, record_size_csv) ) {
-			cout << "In while" << endl;
+
 			// Create new record
         	Record *record = new Record;
         	fixed_len_read(buffer, record_size_csv, record, 1);
@@ -258,23 +260,20 @@ int main(int argc, char** argv) {
             // See next available slot
             slot = add_fixed_len_page(page, record);	
 
-            cout << "Next Slot: " << slot << endl;
-
 			// If there is space, add the record; else 
 			// If there are no slots left, write this page to disk,
 			// delete old page, init new page and add record in there
 			if ( slot > -1 ) {
 				write_fixed_len_page(page, slot, record);
 			} else {
-				cout << "About to write out page" << endl;
-				binout.write(reinterpret_cast<const char *> (&(page->total_slots)), sizeof(page->total_slots));
-                binout.write(reinterpret_cast<const char *> (page->slots_used), sizeof(page->slots_used));
-                binout.write(reinterpret_cast<const char *> (page->page_size), sizeof(page->page_size));
-                binout.write(reinterpret_cast<const char *> (page->slot_size), sizeof(page->slot_size));
+				binout.write(reinterpret_cast<char *> (&(page->total_slots)), sizeof(page->total_slots));
+                binout.write(reinterpret_cast<char *> (&(page->slots_used)), sizeof(page->slots_used));
+                binout.write(reinterpret_cast<char *> (&(page->page_size)), sizeof(page->page_size));
+                binout.write(reinterpret_cast<char *> (&(page->slot_size)), sizeof(page->slot_size));
 
-                for (int slot = 0; slot < page->total_slots; slot++) {
-					fixed_len_write((*(page->records))[slot], outBuffer);
-				}
+                for (int s = 0; s < page->total_slots; s++) {
+					fixed_len_write((*(page->records))[s], outBuffer);
+			    }	
 
 				binout.write(outBuffer, page->page_size);
 
@@ -282,7 +281,7 @@ int main(int argc, char** argv) {
 
 				init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
 
-				write_fixed_len_page(page, slot, record);
+				//write_fixed_len_page(page, slot, record);
 			}
 
 		}
