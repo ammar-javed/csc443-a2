@@ -266,7 +266,10 @@ int main(int argc, char** argv) {
     // Input and output streams
     ofstream binout (argv[2], ios::binary | ios::app);    
     ifstream csvin (argv[1]);
-   
+
+    // Files are open, begin timing
+    clock_t begin = clock();
+
     if ( csvin.is_open() && binout.is_open() ) {
 
         // While there are records to read
@@ -335,10 +338,14 @@ int main(int argc, char** argv) {
 
     binout.write(outBuffer, page->page_size);
 
+    //Finished writing last page
+    clock_t end = clock();
+    double total_millisec = (double(end - begin) / CLOCKS_PER_SEC) * 1000 ;
+
     // Outputting the relevant metrics as per assignment requirements
     cout << "NUMBER OF RECORDS: " << total_records << endl;
     cout << "NUMBER OF PAGES: " << total_pages << endl;
-    cout << "Time: " << endl;
+    cout << "Time: " << total_millisec << " MS" << endl;
     delete[] outBuffer;
     free_page(&page);
 
