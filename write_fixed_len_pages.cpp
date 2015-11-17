@@ -62,7 +62,7 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
   
    
     for (int i = 0; i < (*page)->total_slots; i++) {
-        (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "\0")); 
+        (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "0000000000")); 
     }	
 }
  
@@ -210,6 +210,7 @@ void run_tests(int page_size, int slot_size) {
 
 void free_page(Page **page) {
     for (int i = 0; i < (*page)->total_slots; i++) {
+        (*page)->records->at(i)->clear();
         delete (*page)->records->at(i);
     }
 
@@ -235,7 +236,7 @@ int main(int argc, char** argv) {
 
     // We will read in 1 record at a time:
     // (100 * 10) + (100 -1) to account for the commas in the csv file
-    int record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES - 1);
+    int record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES);
 
     char* buffer  = new char[record_size_csv];
     Page* page;
@@ -243,16 +244,13 @@ int main(int argc, char** argv) {
 
 	init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE); 
 
-    char* outBuffer = new char[page->page_size];
-    outBuffer[0] = '\0';
-
+    char* outBuffer;
     ofstream binout (argv[2], ios::binary | ios::app);    
     ifstream csvin (argv[1]);
    
     if ( csvin.is_open() && binout.is_open() ) {
 
     	while ( csvin.read(buffer, record_size_csv) ) {
-
 			// Create new record
         	Record *record = new Record;
         	fixed_len_read(buffer, record_size_csv, record, 1);
@@ -271,25 +269,47 @@ int main(int argc, char** argv) {
                 binout.write(reinterpret_cast<char *> (&(page->page_size)), sizeof(page->page_size));
                 binout.write(reinterpret_cast<char *> (&(page->slot_size)), sizeof(page->slot_size));
 
+                outBuffer = new char[page->page_size];
+                outBuffer[0] = '\0';
+
                 for (int s = 0; s < page->total_slots; s++) {
 					fixed_len_write((*(page->records))[s], outBuffer);
-			    }	
+			    }
 
 				binout.write(outBuffer, page->page_size);
+
+                delete[] outBuffer;
 
 				free_page(&page);
 
 				init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
 
-				//write_fixed_len_page(page, slot, record);
+                slot = 0;
+				write_fixed_len_page(page, slot, record);
 			}
-
 		}
 
     } else {
         cout << "\n\nERROR: Failed to open csv file, or create new page_file." << endl;
 		return EXIT_FAILURE;
     }
+
+    outBuffer = new char[page->page_size];
+    outBuffer[0] = '\0';
+
+    binout.write(reinterpret_cast<char *> (&(page->total_slots)), sizeof(page->total_slots));
+    binout.write(reinterpret_cast<char *> (&(page->slots_used)), sizeof(page->slots_used));
+    binout.write(reinterpret_cast<char *> (&(page->page_size)), sizeof(page->page_size));
+    binout.write(reinterpret_cast<char *> (&(page->slot_size)), sizeof(page->slot_size));
+
+    for (int s = 0; s < page->total_slots; s++) {
+        fixed_len_write((*(page->records))[s], outBuffer);
+    }
+
+    binout.write(outBuffer, page->page_size);
+
+    delete[] outBuffer;
+    free_page(&page);
 
     csvin.close();
     binout.close();
