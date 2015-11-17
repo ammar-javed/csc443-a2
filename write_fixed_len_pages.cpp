@@ -232,28 +232,52 @@ int main(int argc, char** argv) {
        verbose = true;
     }	
 
+     /*
+      * The test suite of functions
+      */ 
 	//run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
+
+    // Total record read from csv
+    int total_records = 0;
+
+    // Total Number of pages allocated
+    int total_pages = 0;
 
     // We will read in 1 record at a time:
     // (100 * 10) + (100 -1) to account for the commas in the csv file
     int record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES);
 
+    // Init the buffer we read csv records into
     char* buffer  = new char[record_size_csv];
+
+    // Page we will be using
     Page* page;
+
+    // The next available slot in the page
     int slot;
 
+    // Initialize a new page
 	init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE); 
+    total_pages++;
 
+    // The serialized records from a page
     char* outBuffer;
+
+    // Input and output streams
     ofstream binout (argv[2], ios::binary | ios::app);    
     ifstream csvin (argv[1]);
    
     if ( csvin.is_open() && binout.is_open() ) {
 
+        // While there are records to read
     	while ( csvin.read(buffer, record_size_csv) ) {
-			// Create new record
+
+            // Create new record
         	Record *record = new Record;
+
+            // deserialize the record from buffer into the Record vector
         	fixed_len_read(buffer, record_size_csv, record, 1);
+            total_records++;
 
             // See next available slot
             slot = add_fixed_len_page(page, record);	
@@ -283,6 +307,7 @@ int main(int argc, char** argv) {
 				free_page(&page);
 
 				init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
+                total_pages++;
 
                 slot = 0;
 				write_fixed_len_page(page, slot, record);
@@ -294,6 +319,8 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
     }
 
+	// Write out the current buffer, since either it was not completely filled, or the very last read
+	// caused it to be full, but it wasn't written out to allocate a new page for a new record.
     outBuffer = new char[page->page_size];
     outBuffer[0] = '\0';
 
@@ -308,6 +335,10 @@ int main(int argc, char** argv) {
 
     binout.write(outBuffer, page->page_size);
 
+    // Outputting the relevant metrics as per assignment requirements
+    cout << "NUMBER OF RECORDS: " << total_records << endl;
+    cout << "NUMBER OF PAGES: " << total_pages << endl;
+    cout << "Time: " << endl;
     delete[] outBuffer;
     free_page(&page);
 
