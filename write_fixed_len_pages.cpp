@@ -101,7 +101,10 @@ int add_fixed_len_page(Page *page, Record *r) {
 void write_fixed_len_page(Page *page, int slot, Record *r){
     
     vector<Record*> records = *(page->records);
+    delete records[slot];
     records[slot] = r;
+	page->slots_used++;
+
 }
  
 /**
@@ -205,6 +208,16 @@ void run_tests(int page_size, int slot_size) {
     delete page;
 }
 
+void free_page(Page **page) {
+    for (int i = 0; i < (*page)->total_slots; i++) {
+        delete (*page)->records->at(i);
+    }
+
+    delete (*page)->records;
+
+    delete (*page);
+}
+
 int main(int argc, char** argv) {
     
     if(argc < 4) {
@@ -218,28 +231,72 @@ int main(int argc, char** argv) {
        verbose = true;
     }	
 
-	run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
+	//run_tests(atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE );
 
     // We will read in 1 record at a time:
     // (100 * 10) + (100 -1) to account for the commas in the csv file
     int record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES - 1);
 
-    char * buffer  = new char[record_size_csv];
+    char* buffer  = new char[record_size_csv];
+    Page* page;
+    int slot;
+    char* outBuffer = 0;
+
+	init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE); 
 
     ofstream binout (argv[2], ios::binary);    
-    ofstream csvin (argv[1]);
+    ifstream csvin (argv[1]);
    
-    //if ( csvin.is_open() && binout.is_open() ) {
+    if ( csvin.is_open() && binout.is_open() ) {
 
-    //	while ( csvin.read(buffer, record_size_csv) ) {
-			
-	//	}
+    	while ( csvin.read(buffer, record_size_csv) ) {
+			cout << "In while" << endl;
+			// Create new record
+        	Record *record = new Record;
+        	fixed_len_read(buffer, record_size_csv, record, 1);
 
-    //} 
+            // See next available slot
+            slot = add_fixed_len_page(page, record);	
+
+            cout << "Next Slot: " << slot << endl;
+
+			// If there is space, add the record; else 
+			// If there are no slots left, write this page to disk,
+			// delete old page, init new page and add record in there
+			if ( slot > -1 ) {
+				write_fixed_len_page(page, slot, record);
+			} else {
+				cout << "About to write out page" << endl;
+				binout.write(reinterpret_cast<const char *> (&(page->total_slots)), sizeof(page->total_slots));
+                binout.write(reinterpret_cast<const char *> (page->slots_used), sizeof(page->slots_used));
+                binout.write(reinterpret_cast<const char *> (page->page_size), sizeof(page->page_size));
+                binout.write(reinterpret_cast<const char *> (page->slot_size), sizeof(page->slot_size));
+
+                for (int slot = 0; slot < page->total_slots; slot++) {
+					fixed_len_write((*(page->records))[slot], outBuffer);
+				}
+
+				binout.write(outBuffer, page->page_size);
+
+				free_page(&page);
+
+				init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
+
+				write_fixed_len_page(page, slot, record);
+			}
+
+		}
+
+    } else {
+        cout << "\n\nERROR: Failed to open csv file, or create new page_file." << endl;
+		return EXIT_FAILURE;
+    }
 
     csvin.close();
     binout.close();
+
     delete[] buffer;
+
     return EXIT_SUCCESS;
 
 }
