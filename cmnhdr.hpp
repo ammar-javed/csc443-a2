@@ -6,6 +6,11 @@ using namespace std;
 #define NUM_ATTRIBUTES 100
 #define ATTRIBUTE_SIZE 10
 
+typedef uint64_t Offset;
+typedef uint64_t int64;
+
+int OFFSET_SIZE = sizeof(Offset);
+
 typedef const char* V;
 typedef vector<V> Record;
 
@@ -20,6 +25,33 @@ typedef struct {
     int64_t slot_size;
     vector<Record*>* records;
 } Page;
+
+// Heap file Struct
+typedef struct {
+    FILE *file_ptr;
+    int page_size;
+} Heapfile;
+
+// Page ID = page offset
+typedef Offset PageID;
+
+// RecordID Struct
+typedef struct {
+    Offset page_id;
+    Offset slot;
+} RecordID;
+
+// DirectoryEntry struct
+typedef struct {
+    Offset page_offset;
+    int64 free_space;
+} DirectoryEntry;
+
+/*****************************************************************
+ *
+ * PAGE MANAGER METHODS
+ *
+ *****************************************************************/
 
 /**
  * Initializes a page using the given slot size
@@ -69,3 +101,35 @@ void fixed_len_write(Record *record, void *buf);
  * stores the record in `record`.
  */
 void fixed_len_read(void *buf, int size, Record *record);
+
+
+/*****************************************************************
+ *
+ * HEAP MANAGER METHODS
+ *
+ ****************************************************************/
+
+/**
+ * Initalize a heapfile to use the file and page size given.
+ */
+void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
+
+/**
+ * Allocate another page in the heapfile.  This grows the file by a page.
+ */
+PageID alloc_page(Heapfile *heapfile);
+
+/**
+ * Read a page into memory
+ */
+void read_page(Heapfile *heapfile, PageID pid, Page *page);
+
+/**
+ * Write a page from memory to disk
+ */
+void write_page(Page *page, Heapfile *heapfile, PageID pid);
+
+/**
+ * Returns the total number of directory entries in a directory
+ */
+int get_total_directory_entries(Heapfile *heapfile);
