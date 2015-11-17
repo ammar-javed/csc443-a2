@@ -21,4 +21,4 @@ heapman_tester: heapfile_manager.cpp hm.o
 all: write_fixed_len_pages heapman_tester read_fixed_len_page
 
 clean:
-	-rm *o bin/*
+	rm *.o bin/*

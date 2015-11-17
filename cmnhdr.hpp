@@ -98,7 +98,9 @@ void fixed_len_write(Record *record, void *buf);
 
 /**
  * Deserializes `size` bytes from the buffer, `buf`, and
- * stores the record in `record`.
+ * stores the record in `record`. If we are reading from
+ * a CSV file instead of a page, account for the ',' read
+ * in and ignored.
  */
 void fixed_len_read(void *buf, int size, Record *record);
 

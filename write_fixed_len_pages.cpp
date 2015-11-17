@@ -53,7 +53,7 @@ void fixed_len_read(void *buf, int size, Record *record, int csv) {
  * Initializes a page using the given slot size
  */
 void init_fixed_len_page(Page **page, int page_size, int slot_size){
-    *page = new Page;
+    *page = new Page();
     (*page)->page_size = page_size;
     (*page)->slot_size = slot_size;
     (*page)->slots_used = 0;
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
     // Init the buffer we read csv records into
     char* buffer  = new char[record_size_csv];
 
-    // Page we will be using
+    // Page pointer we will be using
     Page* page;
 
     // The next available slot in the page
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
     char* outBuffer;
 
     // Input and output streams
-    ofstream binout (argv[2], ios::binary | ios::app);    
+    ofstream binout (argv[2], ios::app);    
     ifstream csvin (argv[1]);
 
     // Files are open, begin timing
