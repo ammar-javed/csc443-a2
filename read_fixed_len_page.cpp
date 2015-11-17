@@ -107,6 +107,15 @@ int main(int argc, char** argv) {
 
     // Records buffer
     char* recordsBuffer;
+   
+    // Keep track of how long it takes to dump pages to screen
+    // We will not include this time in the read time
+    clock_t dump_start;
+    clock_t dump_end;
+    double dump_time = 0;
+
+    // File is open, begin timing
+    clock_t begin = clock();
 
     if ( binary_input.is_open() ) {
         while ( binary_input.read(reinterpret_cast<char *> (&(page->total_slots)), sizeof(int64_t)) ) {
@@ -137,14 +146,21 @@ int main(int argc, char** argv) {
 
                 write_fixed_len_page(page, record);
                 
+                total_records++;
             }
 
+            dump_start = clock();
+
             dump_page_records(page);
+
+            dump_end = clock();
+
+            dump_time += (dump_end - dump_start);
 
             // If we had a partially empty page, then skip ahead to next page
             // else this pointer wont move
             binary_input.seekg( binary_input.tellg() + (page->page_size - recSize) ); 
-
+            total_pages++;
             free_page(&page);
 
             delete[] recordsBuffer;
@@ -156,6 +172,17 @@ int main(int argc, char** argv) {
         cout << "\n\nERROR: Failed to open page_file." << endl;
         return EXIT_FAILURE;
     }
+
+    //Finished reading last page
+    clock_t end = clock();
+    double total_minus_dump = (end - begin) - dump_time;
+    double total_millisec = (total_minus_dump / CLOCKS_PER_SEC) * 1000 ;
+
+    // Outputting the relevant metrics as per assignment requirements
+    cout << endl << endl << endl;
+    cout << "NUMBER OF RECORDS: " << total_records << endl;
+    cout << "NUMBER OF PAGES: " << total_pages << endl;
+    cout << "Time: " << total_millisec << " MS" << endl;
 
     free_page(&page);
 
