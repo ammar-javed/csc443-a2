@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 #include "string.h"
-#include "wflp.hpp"
+#include "cmnhdr.hpp"
 #include <fstream>
 
 // Global verbose setting
@@ -357,4 +357,3 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 
 }
-
