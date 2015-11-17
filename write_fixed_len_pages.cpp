@@ -268,7 +268,8 @@ int main(int argc, char** argv) {
     ifstream csvin (argv[1]);
 
     // Files are open, begin timing
-    clock_t begin = clock();
+    struct timeval start, end, result;
+    gettimeofday(&start, NULL);
 
     if ( csvin.is_open() && binout.is_open() ) {
 
@@ -339,8 +340,9 @@ int main(int argc, char** argv) {
     binout.write(outBuffer, page->page_size);
 
     //Finished writing last page
-    clock_t end = clock();
-    double total_millisec = (double(end - begin) / CLOCKS_PER_SEC) * 1000 ;
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total_millisec = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
 
     // Outputting the relevant metrics as per assignment requirements
     cout << "NUMBER OF RECORDS: " << total_records << endl;

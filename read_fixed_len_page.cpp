@@ -110,12 +110,12 @@ int main(int argc, char** argv) {
    
     // Keep track of how long it takes to dump pages to screen
     // We will not include this time in the read time
-    clock_t dump_start;
-    clock_t dump_end;
+    struct timeval dump_start, dump_end, dump_result;
     double dump_time = 0;
 
     // File is open, begin timing
-    clock_t begin = clock();
+    struct timeval start, end, result;
+    gettimeofday(&start, NULL);
 
     if ( binary_input.is_open() ) {
         while ( binary_input.read(reinterpret_cast<char *> (&(page->total_slots)), sizeof(int64_t)) ) {
@@ -149,13 +149,15 @@ int main(int argc, char** argv) {
                 total_records++;
             }
 
-            dump_start = clock();
+            gettimeofday(&dump_start, NULL);
 
             dump_page_records(page);
 
-            dump_end = clock();
+            gettimeofday(&dump_end, NULL);
 
-            dump_time += (dump_end - dump_start);
+            timersub(&dump_end, &dump_start, &dump_result);
+
+            dump_time += (dump_result.tv_sec * 1000.0) + (dump_result.tv_usec / 1000.0);
 
             // If we had a partially empty page, then skip ahead to next page
             // else this pointer wont move
@@ -174,15 +176,16 @@ int main(int argc, char** argv) {
     }
 
     //Finished reading last page
-    clock_t end = clock();
-    double total_minus_dump = (end - begin) - dump_time;
-    double total_millisec = (total_minus_dump / CLOCKS_PER_SEC) * 1000 ;
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
+    double total_minus_dump = total - dump_time;
 
     // Outputting the relevant metrics as per assignment requirements
     cout << endl << endl << endl;
     cout << "NUMBER OF RECORDS: " << total_records << endl;
     cout << "NUMBER OF PAGES: " << total_pages << endl;
-    cout << "Time: " << total_millisec << " MS" << endl;
+    cout << "Time: " << total_minus_dump << " MS" << endl;
 
     free_page(&page);
 

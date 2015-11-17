@@ -1,5 +1,6 @@
-#include <cstdint>
-#include <ctime>
+#include "stdint.h"
+#include "stdlib.h"
+#include <sys/time.h>
 
 using namespace std;
 
