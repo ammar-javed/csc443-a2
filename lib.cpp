@@ -305,6 +305,14 @@ void append_record(Page *page, Record *r){
 
     page->records->push_back(r);
 }
+
+/**
+ * Write a page from memory to disk
+ */
+void write_page(Page *page, Heapfile *heapfile, PageID pid){
+
+}
+
 /*****************************************************************
  *
  * READING
@@ -318,7 +326,37 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
     r = (*(page->records))[slot];
 }
 
+/**
+ * Read a page into memory
+ */
+void read_page(Heapfile *heapfile, PageID pid, Page *page){
 
+    int page_size = heapfile->page_size;
+
+    // Go to the directory entry to extract the metadata
+    int total_dir_entries =  get_total_directory_entries(page_size);
+    Offset directory_num = pid / total_dir_entries;
+    fseek(heapfile->file_ptr, page_size * (total_dir_entries + 1) * directory_num, SEEK_SET);
+
+    Offset directory_offset = (total_dir_entries + 1) * directory_num;
+    Offset directory_entry_offset = pid - directory_offset - 1;
+
+    // Skip the next directory pointer and the directory entries before the entry
+    // of the page and the page_offset of the current directory entry
+    fseek(heapfile->file_ptr, (directory_entry_offset * 2) + (2 * OFFSET_SIZE), SEEK_CUR);
+
+    Offset free_space;
+    fread(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
+
+
+
+    // from the heapfile, go to the pageID and then
+    // read it's contents in to a char buf of page_size
+    // and then write the buffer to the page.
+    fseek(heapfile->file_ptr, pid * heapfile->page_size, SEEK_SET);
+    char *buf = new char[heapfile->page_size];
+
+}
 /*****************************************************************
  *
  * HELPERS

@@ -1,5 +1,6 @@
 #include "lib.cpp"
 
+
 int main(int argc, char** argv) {
     if(argc < 2) {
         cout << "ERROR: Invalid number of arguments. Please use the following format:" << endl;
