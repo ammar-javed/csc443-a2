@@ -7,8 +7,11 @@ using namespace std;
 #define NUM_ATTRIBUTES 100
 #define ATTRIBUTE_SIZE 10
 
-typedef uint64_t Offset;
-typedef uint64_t int64;
+typedef int64_t Offset;
+typedef int64_t int64;
+
+// Global verbose setting
+bool verbose = false;
 
 int OFFSET_SIZE = sizeof(Offset);
 
@@ -103,7 +106,7 @@ void fixed_len_write(Record *record, void *buf);
  * a CSV file instead of a page, account for the ',' read
  * in and ignored.
  */
-void fixed_len_read(void *buf, int size, Record *record);
+void fixed_len_read(char *buf, int size, Record *record, int csv=0);
 
 
 /*****************************************************************

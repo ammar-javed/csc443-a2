@@ -1,78 +1,4 @@
-#include "stdio.h"
-#include <vector>
-#include <iostream>
-#include "string.h"
-#include "cmnhdr.hpp"
-#include <fstream>
-
-// Verbose status
-bool verbose = false;
-
-/**
- * Initializes a page 
- */
-void init_fixed_len_page(Page **page){
-    *page = new Page();
-    (*page)->records = new vector<Record*>;
-}
-
-/*
- * Print all records in CSV format.
- */
-void dump_page_records(Page *page) {
-    int atts;
-    for (int i=0; i < page->slots_used; i++) {
-        atts = 0;
-        vector<Record*> records = (*(page->records));
-        for ( attr = records[i]->begin(); attr != records[i]->end(); ++attr) {
-            cout << (*attr);
-            if ( atts != 99 ) {
-                cout << ",";
-            } else {
-                cout << endl;
-            }
-            atts++;
-        }
-    }
-}
-
-/**
- * Deserializes `size` bytes from the buffer, `buf`, and
- * stores the record in `record`. If we are reading from
- * a CSV file instead of a page, account for the ',' read
- * in and ignored.
- */
-void fixed_len_read(void *buf, int size, Record *record) {
-    char* attribute;
-    int read = 0;
-
-    while (read < size) {
-        attribute = new char[11];
-        memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
-        attribute[10] = '\0';
-        read += ATTRIBUTE_SIZE;
-        (*record).push_back(attribute);
-    }
-}
-
-/**
- * Write a record into the page
- */
-void write_fixed_len_page(Page *page, Record *r){
-
-    page->records->push_back(r);
-}
-
-void free_page(Page **page) {
-    for (int i = 0; i < (*page)->slots_used; i++) {
-        (*page)->records->at(i)->clear();
-        delete (*page)->records->at(i);
-    }
-
-    delete (*page)->records;
-
-    delete (*page);
-}
+#include "lib.cpp"
 
 int main(int argc, char** argv) {
 
@@ -100,7 +26,7 @@ int main(int argc, char** argv) {
     Page* page;
 
     // Init Page
-    init_fixed_len_page(&page);
+    init_page(&page);
 
     // Input stream
     ifstream binary_input (argv[1]);
@@ -144,7 +70,7 @@ int main(int argc, char** argv) {
 
                 fixed_len_read(&(recordsBuffer[i]), page->slot_size, record);
 
-                write_fixed_len_page(page, record);
+                append_record(page, record);
                 
                 total_records++;
             }
@@ -163,11 +89,11 @@ int main(int argc, char** argv) {
             // else this pointer wont move
             binary_input.seekg( binary_input.tellg() + (page->page_size - recSize) ); 
             total_pages++;
-            free_page(&page);
+            free_page(&page, page->slots_used);
 
             delete[] recordsBuffer;
 
-            init_fixed_len_page(&page);
+            init_page(&page);
 
         }
     } else {
@@ -187,7 +113,7 @@ int main(int argc, char** argv) {
     cout << "NUMBER OF PAGES: " << total_pages << endl;
     cout << "Time: " << total_minus_dump << " MS" << endl;
 
-    free_page(&page);
+    free_page(&page, page->slots_used);
 
     return EXIT_SUCCESS;
 }

@@ -1,118 +1,4 @@
-#include "stdio.h"
-#include <vector>
-#include <iostream>
-#include "string.h"
-#include "cmnhdr.hpp"
-#include <fstream>
-
-// Global verbose setting
-bool verbose = false;
-
-/**
- * Compute the number of bytes required to serialize record
- */
-int fixed_len_sizeof(Record *record){
-    int size = 0;
-    for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
-        size += strlen(*attr);
-    }
-    return size;    
-}
-
-/**
- * Serialize the record to a byte array to be stored in buf.
- */
-void fixed_len_write(Record *record, char *buf) {
-    for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
-        strcat(buf, (*attr));
-    }
-}
-
-/**
- * Deserializes `size` bytes from the buffer, `buf`, and
- * stores the record in `record`. If we are reading from
- * a CSV file instead of a page, account for the ',' read
- * in and ignored.
- */
-void fixed_len_read(void *buf, int size, Record *record, int csv) {
-    char* attribute;
-    int read = 0;
-    
-    while (read < size) {
-        attribute = new char[11];
-        memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
-        attribute[10] = '\0';
-        read += ATTRIBUTE_SIZE;
-        if (csv)
-            read += sizeof(char);
-        (*record).push_back(attribute);
-    }
-}
- 
-/**
- * Initializes a page using the given slot size
- */
-void init_fixed_len_page(Page **page, int page_size, int slot_size){
-    *page = new Page();
-    (*page)->page_size = page_size;
-    (*page)->slot_size = slot_size;
-    (*page)->slots_used = 0;
-    (*page)->total_slots = fixed_len_page_capacity(*page);
-    (*page)->records = new vector<Record*>;
-  
-   
-    for (int i = 0; i < (*page)->total_slots; i++) {
-        (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "0000000000")); 
-    }	
-}
- 
-/**
- * Calculates the maximal number of records that fit in a page
- */
-int fixed_len_page_capacity(Page *page) {
-    return page->page_size / page->slot_size;
-}
-
-/**
- * Calculate the free space (number of free slots) in the page
- */
-int fixed_len_page_freeslots(Page *page) {
-    return page->total_slots - page->slots_used; 
-}
- 
-/**
- * Add a record to the page
- * Returns:
- *   record slot offset if successful,
- *   -1 if unsuccessful (page full)
- */
-int add_fixed_len_page(Page *page, Record *r) {
-    if (fixed_len_page_freeslots(page) <= 0){
-	return -1; 	// No more free slots available
-    }
-    
-    // Assuming that first slot available is at index page->slots_used
-    return page->slots_used;
-}
- 
-/**
- * Write a record into a given slot.
- */
-void write_fixed_len_page(Page *page, int slot, Record *r){
-    
-    vector<Record*>* records = page->records;
-    delete (*records)[slot];
-    (*records)[slot] = r;
-	page->slots_used++;
-
-}
- 
-/**
- * Read a record from the page from a given slot.
- */
-void read_fixed_len_page(Page *page, int slot, Record *r){
-    r = (*(page->records))[slot];   
-}
+#include "lib.cpp"
 
 /**
  * Run unit tests of functions
@@ -208,17 +94,6 @@ void run_tests(int page_size, int slot_size) {
     delete page;
 }
 
-void free_page(Page **page) {
-    for (int i = 0; i < (*page)->total_slots; i++) {
-        (*page)->records->at(i)->clear();
-        delete (*page)->records->at(i);
-    }
-
-    delete (*page)->records;
-
-    delete (*page);
-}
-
 int main(int argc, char** argv) {
     
     if(argc < 4) {
@@ -308,7 +183,7 @@ int main(int argc, char** argv) {
 
                 delete[] outBuffer;
 
-				free_page(&page);
+				free_page(&page, page->total_slots);
 
 				init_fixed_len_page(&page, atoi(argv[3]), NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
                 total_pages++;
@@ -349,7 +224,7 @@ int main(int argc, char** argv) {
     cout << "NUMBER OF PAGES: " << total_pages << endl;
     cout << "Time: " << total_millisec << " MS" << endl;
     delete[] outBuffer;
-    free_page(&page);
+    free_page(&page, page->slots_used);
 
     csvin.close();
     binout.close();

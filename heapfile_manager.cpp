@@ -5,9 +5,6 @@
 #include "cmnhdr.hpp"
 #include "stdint.h"
 
-// Global verbose setting
-bool verbose = false;
-
 /**
  * Initalize a heapfile to use the file and page size given.
  * precondition: the file is already opened with r+ or w+ permissions
