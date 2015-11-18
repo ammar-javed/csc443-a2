@@ -311,6 +311,33 @@ void append_record(Page *page, Record *r){
  */
 void write_page(Page *page, Heapfile *heapfile, PageID pid){
 
+    int page_size = heapfile->page_size;
+
+    // Go to the directory entry to insert the metadata
+    int total_dir_entries =  get_total_directory_entries(page_size);
+    Offset directory_num = pid / total_dir_entries;
+    fseek(heapfile->file_ptr, page_size * (total_dir_entries + 1) * directory_num, SEEK_SET);
+
+    Offset directory_offset = (total_dir_entries + 1) * directory_num;
+    Offset directory_entry_slot = pid - directory_offset - 1;
+
+    // Skip the next directory pointer and the directory entries before the entry
+    // of the page
+    fseek(heapfile->file_ptr, (directory_entry_slot * 2) + OFFSET_SIZE, SEEK_CUR);
+
+
+    // Write the page offset
+    fwrite(&pid, OFFSET_SIZE, 1, heapfile->file_ptr);
+    Offset free_space = 0; //TODO: Calculate the free space
+    fwrite(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
+    
+
+    // TODO: Assume that this buffer contains all the data from the page file
+    char *buf = new char[heapfile->page_size];
+
+    fseek(heapfile->file_ptr, pid * heapfile->page_size, SEEK_SET);
+    fwrite(buf, page_size, 1, heapfile->file_ptr);
+
 }
 
 /*****************************************************************
