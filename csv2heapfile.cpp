@@ -23,6 +23,13 @@ int main(int argc, char** argv) {
 
     int64 record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES);
 
+    // Total Records and page count
+    int64 total_records = 0;
+    int64 total_pages = 0;
+
+    // Structs for timing
+    struct timeval start, end, result;
+
     // Page pointer
     Page* page;
 
@@ -44,6 +51,9 @@ int main(int argc, char** argv) {
     // Opening the CSV file stream
     ifstream csv_in(argv[1]);
 
+    // Files are open, begin timing
+    gettimeofday(&start, NULL);
+
     if ( csv_in.is_open() ) {
         // Initial read
         csv_in.read(buffer, record_size_csv * page->total_slots);
@@ -59,15 +69,15 @@ int main(int argc, char** argv) {
 
                 append_record(page, record);
                 page->slots_used++;
+                total_records++;
             }
  
-            cout << "no seg fault" << endl;
-
             // Allocate a page in the heapfile
             Offset page_offset = alloc_page(hf);
 
             // Write the page into the heapfile at the appropriate offset
             write_page(page, hf, page_offset);
+            total_pages++;
 
             // Free this page, and init a new one
             free_page(&page, page->slots_used);
@@ -82,6 +92,18 @@ int main(int argc, char** argv) {
             csv_in.read(buffer, record_size_csv * page->total_slots);
         }
 
+    }
+
+    //Finished writing last page
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total_millisec = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
+
+    if (verbose) {
+        // Outputting the relevant metrics 
+        cout << "NUMBER OF RECORDS: " << total_records << endl;
+        cout << "NUMBER OF PAGES: " << total_pages << endl;
+        cout << "Time: " << total_millisec << " MS" << endl;
     }
 
     // Memory Cleaning up
