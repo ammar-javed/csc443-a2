@@ -4,6 +4,14 @@
 #include "stdio.h"
 #include "string.h"
 #include "cmnhdr.hpp"
+
+
+/*****************************************************************
+ *
+ * PAGE INITIALIZATION
+ *
+ *****************************************************************/
+
 /*
  * Initializes a page using the given slot size
  */
@@ -28,6 +36,12 @@ void init_page(Page **page){
     *page = new Page();
     (*page)->records = new vector<Record*>;
 }
+
+/*****************************************************************
+ *
+ * RECORD SERIALIZATION AND DESERIALIZATION
+ *
+ *****************************************************************/
 
 /*
  * Compute the number of bytes required to serialize record
@@ -70,6 +84,12 @@ void fixed_len_read(char *buf, int size, Record *record, int csv) {
     }
 }
 
+/*****************************************************************
+ *
+ * WRITTING
+ *
+ *****************************************************************/
+
 /*
  * Calculates the maximal number of records that fit in a page
  */
@@ -111,21 +131,32 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
 }
 
 /*
- * Write the record at the end of page
- * this function assumes you will ALWAYS be
- * able to fit a record at the end.
+ * Write the record at the end of page this function assumes you 
+ * will ALWAYS be able to fit a record at the end.
  */
 void append_record(Page *page, Record *r){
 
     page->records->push_back(r);
 }
+/*****************************************************************
+ *
+ * READING
+ *
+ *****************************************************************/
 
 /*
- * Read a record from the page from a given slot.
+ * Read a record from the p4age from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
     r = (*(page->records))[slot];
 }
+
+
+/*****************************************************************
+ *
+ * HELPERS
+ *
+ *****************************************************************/
 
 /*
  * Print all records in CSV format.
@@ -146,6 +177,12 @@ void dump_page_records(Page *page) {
         }
     }
 }
+
+/*****************************************************************
+ *
+ * CLEAN UP
+ *
+ *****************************************************************/
 
 /*
  * Delete entire page, including all vectors initialized

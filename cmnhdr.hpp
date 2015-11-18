@@ -34,6 +34,7 @@ typedef struct {
 typedef struct {
     FILE *file_ptr;
     int page_size;
+	Offset last_directory_offset;
 } Heapfile;
 
 // Page ID = page offset
@@ -139,3 +140,14 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid);
  * Returns the total number of directory entries in a directory
  */
 int get_total_directory_entries(Heapfile *heapfile);
+
+/*
+ * Adding on a page block of page size to the end of file
+ */
+Offset append_empty_page_to_file(FILE *file, int page_size);
+
+/**
+ * Appends an empty directory with initialized directory entries
+ * to the end of the file
+ */
+void append_empty_directory_to_file(FILE *file, int page_size);
