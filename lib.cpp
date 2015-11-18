@@ -323,7 +323,7 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
 
     // Skip the next directory pointer and the directory entries before the entry
     // of the page
-    fseek(heapfile->file_ptr, (directory_entry_slot * 2) + OFFSET_SIZE, SEEK_CUR);
+    fseek(heapfile->file_ptr, (directory_entry_slot * 2 * OFFSET_SIZE) + OFFSET_SIZE, SEEK_CUR);
 
 
     // Write the page offset
