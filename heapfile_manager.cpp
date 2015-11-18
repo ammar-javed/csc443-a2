@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     FILE *file_ptr = fopen(argv[1], "w+");
 
     Heapfile *hf = new Heapfile();
-    int size = 80;
+    int size = 4000;
     init_heapfile(hf, size, file_ptr);
 	if (verbose){
         cout << "Page size of heapfile: " << hf->page_size << endl;
@@ -52,7 +52,21 @@ int main(int argc, char** argv) {
         cout << "Offset of fifth page allocated should be 6: " << page_offset << endl;
     }
 
+    if (verbose) {
+        cout << "\n== Testing read_page" << endl;
+    }
 
+
+    Page *p;
+    init_page(&p);
+    read_page(hf, 1, p);
+
+    if (verbose) {
+        cout << "Total slots for empty page: " << p->total_slots << endl;
+        cout << "Slots used for empty page: " << p->slots_used << endl;
+        cout << "Page size for empty page: " << p->page_size << endl;
+        cout << "Slot size for empty page: " << p->slot_size << endl;
+    }
 
     delete hf;
     fclose(file_ptr);

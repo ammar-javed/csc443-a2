@@ -409,6 +409,8 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
     page->slots_used = used_space / record_size;
     page->page_size = page_size;
     page->slot_size = record_size;
+
+    delete[] buf;
     
 }
 
