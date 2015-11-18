@@ -55,6 +55,14 @@ void append_empty_directory_to_file(FILE *file, int page_size){
         fwrite(&initial_dirEntry_offset, OFFSET_SIZE, 1, file);
         fwrite(&initial_dirEntry_size, OFFSET_SIZE, 1, file);
     }
+    
+    int padding = page_size - (OFFSET_SIZE * total_dir_entries * 2) - OFFSET_SIZE;
+    char *padding_str = new char[padding];
+    memset(padding_str, '0', padding);
+    fwrite(padding_str, padding, 1, file);
+
+    delete[] padding_str;
+
 }
 
 /**
@@ -62,28 +70,46 @@ void append_empty_directory_to_file(FILE *file, int page_size){
  */
 PageID alloc_page(Heapfile *heapfile){
 
-    // When extending we add the pages to the very last directory which
-    // we keep track of in the heapfile
+    // The tail of the directory linked list
     Offset dir_offset = heapfile->last_directory_offset;
 
     // Forward the file to the directory and read the directory entries
     fseek(heapfile->file_ptr, dir_offset*heapfile->page_size, SEEK_SET);
+    fpos_t directory_pos;
+    fgetpos(heapfile->file_ptr, &directory_pos);
 
     // Skip the pointer reserved for the next directory
     fseek(heapfile->file_ptr, sizeof(Offset), SEEK_CUR);
 
     int total_dir_entries = get_total_directory_entries(heapfile->page_size);
-    DirectoryEntry *dirEntry = (DirectoryEntry *)(uintptr_t)heapfile->file_ptr;
+    
+    Offset page_offset;
+    fread(&page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
+
     for (int i = 0; i < total_dir_entries; i++){
-        if (dirEntry->page_offset == 0){
+        if (page_offset == 0){
             // Create a new page and write its initialized data in to
             // the end of the file.
-            dirEntry->page_offset = append_empty_page_to_file(
+            Offset new_page_offset = append_empty_page_to_file(
                          heapfile->file_ptr, heapfile->page_size);
-            dirEntry->free_space = heapfile->page_size;
-            return dirEntry->page_offset;
+
+            // We don't need to cahnge the directory_pos because we are
+            // always starting with the very last directory and creating
+            // a new dir if there's no space 
+            fsetpos(heapfile->file_ptr, &directory_pos);
+            
+            // Skip to the current directory entry 
+            fseek(heapfile->file_ptr, OFFSET_SIZE + (i * OFFSET_SIZE * 2), SEEK_CUR);
+
+            // Write the new page offset and set free space
+            fwrite(&new_page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
+            fwrite(&heapfile->page_size, OFFSET_SIZE, 1, heapfile->file_ptr);
+            
+            return new_page_offset;
         }
-        dirEntry ++;
+        // Skip the free size offset and read in the next page_offset
+        fseek(heapfile->file_ptr, OFFSET_SIZE, SEEK_CUR);
+        fread(&page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
     }
 
     // This means the last directory is full so we allocate a new one.
@@ -96,12 +122,16 @@ PageID alloc_page(Heapfile *heapfile){
     // empty, there is no need to traverse through directory entries.
     Offset new_page_offset = append_empty_page_to_file(
 					heapfile->file_ptr, heapfile->page_size);
+    
+    // To the beginning of the new directory
     fseek(heapfile->file_ptr, new_dir_offset*heapfile->page_size, SEEK_SET);
-    fseek(heapfile->file_ptr, sizeof(Offset), SEEK_CUR);
-    dirEntry = (DirectoryEntry *)(uintptr_t)heapfile->file_ptr;
-    dirEntry->page_offset = new_page_offset;
-    dirEntry->free_space = heapfile->page_size;
+    // Skip the next directory pointer
+    fseek(heapfile->file_ptr, OFFSET_SIZE, SEEK_CUR);
 
+    // Write to the first directory entry
+    fwrite(&new_page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
+    fwrite(&heapfile->page_size, OFFSET_SIZE, 1, heapfile->file_ptr);
+    
     // Forward the file to the old directory and link the new directory
     fseek(heapfile->file_ptr, dir_offset*heapfile->page_size, SEEK_SET);
     fwrite(&new_dir_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
@@ -117,9 +147,15 @@ PageID alloc_page(Heapfile *heapfile){
 Offset append_empty_page_to_file(FILE *file, int page_size){
     
 	fseek(file, 0, SEEK_END);
+
     Offset new_page_offset = ftell(file)/ page_size;
-    char initializer = '0';
-    fwrite(&initializer, sizeof(char), page_size, file);
+
+    char *initializer = new char[page_size];
+    memset(initializer, '0', page_size);
+    size_t out= fwrite(initializer, 1, page_size, file);
+   
+
+    delete[] initializer;
     return new_page_offset;
 
 }
@@ -164,13 +200,13 @@ int main(int argc, char** argv) {
         cout << "\n== Testing alloc_page" << endl;
     }
 
-    Offset page_offset = alloc_page(hf);
-    if (verbose){
-        cout << "Offset of first page allocated should be 1: " << page_offset << endl;
-    }
-    page_offset = alloc_page(hf);
-    if (verbose){
-        cout << "Offset of second page allocated should be 2: " << page_offset << endl;
+     Offset page_offset = alloc_page(hf);
+     if (verbose){
+         cout << "Offset of first page allocated should be 1: " << page_offset << endl;
+     }
+     page_offset = alloc_page(hf);
+     if (verbose){
+         cout << "Offset of second page allocated should be 2: " << page_offset << endl;
     }
     page_offset = alloc_page(hf);
     if (verbose){
