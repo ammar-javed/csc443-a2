@@ -30,6 +30,24 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file){
     fseek(file, 0, SEEK_SET);
 }
 
+void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file){
+    heapfile->page_size = page_size;
+    heapfile->file_ptr = file;
+
+    fseek(file, 0, SEEK_SET);
+
+    Offset current_dir = 0;
+    Offset next_dir;
+    fread(&next_dir, OFFSET_SIZE, 1, file);
+
+    while(next_dir != 0){
+        fseek(file, page_size * next_dir, SEEK_SET);
+        current_dir = next_dir;
+        fread(&next_dir, OFFSET_SIZE, 1, file);
+    }
+    heapfile->last_directory_offset = current_dir;
+}
+
 /*****************************************************************
  *
  * HEAP HELPERS
@@ -376,7 +394,7 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
 
     // Skip the next directory pointer and the directory entries before the entry
     // of the page and the page_offset of the current directory entry
-    fseek(heapfile->file_ptr, (directory_entry_offset * 2) + (2 * OFFSET_SIZE), SEEK_CUR);
+    fseek(heapfile->file_ptr, (directory_entry_offset * 2 * OFFSET_SIZE) + (2 * OFFSET_SIZE), SEEK_CUR);
 
     Offset free_space;
     fread(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
