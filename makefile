@@ -18,7 +18,13 @@ hm.o: heapfile_manager.cpp
 heapman_tester: heapfile_manager.cpp hm.o
 	$(CC) -o bin/$@ hm.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page
+c2hf.o: csv2heapfile.cpp
+	$(CC) -o c2hf.o -c csv2heapfile.cpp
+
+csv2heapfile: csv2heapfile.cpp c2hf.o
+	$(CC) -o bin/$@ c2hf.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile
 
 clean:
 	rm *.o bin/*

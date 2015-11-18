@@ -332,9 +332,9 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
     fwrite(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
     
 
-    // TODO: Assume that this buffer contains all the data from the page file
+    // This buffer contains all the data from the page file
     char *buf = new char[heapfile->page_size];
-    memset(buf, '0', heapfile->page_size);
+    memset(buf, '\0', heapfile->page_size);
 
     for (int s = 0; s < page->slots_used; s++) {
         fixed_len_write((*(page->records))[s], buf);
@@ -432,7 +432,7 @@ void dump_page_records(Page *page) {
             cout << (*attr);
             if ( atts != 99 ) {
                 cout << ",";
-            } else {
+            } else if (atts == 99) {
                 cout << endl;
             }
             atts++;
