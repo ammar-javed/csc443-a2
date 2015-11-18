@@ -52,10 +52,25 @@ int main(int argc, char** argv) {
         cout << "Offset of fifth page allocated should be 6: " << page_offset << endl;
     }
 
+    fclose(file_ptr);
+
+    if (verbose) {
+        cout << "\n== Testing init_existing_heapfile" << endl;
+    }
+
+    file_ptr = fopen(argv[1], "r+");
+
+    hf = new Heapfile();
+    init_existing_heapfile(hf, size, file_ptr);
+    if (verbose){
+        cout << "Page size of heapfile should be 4000: " << hf->page_size << endl;
+        cout << "Contents of the page size: " << hf->file_ptr << endl;
+        cout << "Last directory offset should be 0: " << hf->last_directory_offset << endl;
+    }
+
     if (verbose) {
         cout << "\n== Testing read_page" << endl;
     }
-
 
     Page *p;
     init_page(&p);

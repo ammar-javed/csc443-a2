@@ -24,7 +24,13 @@ c2hf.o: csv2heapfile.cpp
 csv2heapfile: csv2heapfile.cpp c2hf.o
 	$(CC) -o bin/$@ c2hf.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile
+scan.o: scan.cpp
+	$(CC) -o scan.o -c scan.cpp
+
+scan: scan.cpp scan.o
+	$(CC) -o bin/$@ scan.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan
 
 clean:
 	rm *.o bin/*
