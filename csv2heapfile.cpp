@@ -81,12 +81,12 @@ int main(int argc, char** argv) {
 
             // Free this page, and init a new one
             free_page(&page, page->slots_used);
-            memset(buffer, '\0', record_size_csv * page->total_slots);
-
             init_page(&page);
             page->page_size = page_size;
             page->slot_size = record_size;
             page->total_slots = page_size / record_size;
+
+            memset(buffer, '\0', record_size_csv * page->total_slots);
 
             // Try reading again
             csv_in.read(buffer, record_size_csv * page->total_slots);

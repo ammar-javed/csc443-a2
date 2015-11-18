@@ -343,7 +343,6 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
     // of the page
     fseek(heapfile->file_ptr, (directory_entry_slot * 2 * OFFSET_SIZE) + OFFSET_SIZE, SEEK_CUR);
 
-
     // Write the page offset
     fwrite(&pid, OFFSET_SIZE, 1, heapfile->file_ptr);
     Offset free_space = page->page_size - (page->slots_used * page->slot_size); 
@@ -351,10 +350,11 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
     
 
     // This buffer contains all the data from the page file
-    char *buf = new char[heapfile->page_size];
+    char *buf = new char[heapfile->page_size+1];
+   
     memset(buf, '\0', heapfile->page_size);
 
-    for (int s = 0; s < page->slots_used; s++) {
+    for (int s = 0; s < page->records->size(); s++) {
         fixed_len_write((*(page->records))[s], buf);
     }
 
