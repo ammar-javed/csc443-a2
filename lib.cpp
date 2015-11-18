@@ -328,16 +328,22 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
 
     // Write the page offset
     fwrite(&pid, OFFSET_SIZE, 1, heapfile->file_ptr);
-    Offset free_space = 0; //TODO: Calculate the free space
+    Offset free_space = page->page_size - (page->slots_used * page->slot_size); 
     fwrite(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
     
 
     // TODO: Assume that this buffer contains all the data from the page file
     char *buf = new char[heapfile->page_size];
+    memset(buf, '0', heapfile->page_size);
+
+    for (int s = 0; s < page->slots_used; s++) {
+        fixed_len_write((*(page->records))[s], buf);
+    }
 
     fseek(heapfile->file_ptr, pid * heapfile->page_size, SEEK_SET);
     fwrite(buf, page_size, 1, heapfile->file_ptr);
 
+    delete[] buf;
 }
 
 /*****************************************************************
