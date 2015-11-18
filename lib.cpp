@@ -347,7 +347,7 @@ void write_page(Page *page, Heapfile *heapfile, PageID pid){
  *****************************************************************/
 
 /*
- * Read a record from the p4age from a given slot.
+ * Read a record from the page from a given slot.
  */
 void read_fixed_len_page(Page *page, int slot, Record *r){
     r = (*(page->records))[slot];
@@ -358,7 +358,7 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
  */
 void read_page(Heapfile *heapfile, PageID pid, Page *page){
 
-    int page_size = heapfile->page_size;
+    int64 page_size = heapfile->page_size;
 
     // Go to the directory entry to extract the metadata
     int total_dir_entries =  get_total_directory_entries(page_size);
@@ -375,15 +375,37 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
     Offset free_space;
     fread(&free_space, OFFSET_SIZE, 1, heapfile->file_ptr);
 
-
-
     // from the heapfile, go to the pageID and then
     // read it's contents in to a char buf of page_size
     // and then write the buffer to the page.
     fseek(heapfile->file_ptr, pid * heapfile->page_size, SEEK_SET);
-    char *buf = new char[heapfile->page_size];
 
+    // Calculate slot size
+    int64 record_size = NUM_ATTRIBUTES * ATTRIBUTE_SIZE;
+
+    // Optimal space to read in
+    int64 used_space = page_size - free_space;
+    char *buf = new char[used_space];
+
+    fread(buf, sizeof(char), used_space, heapfile->file_ptr);
+
+    // For each record, deserialize it and put it in the page
+    for (int i = 0; i < used_space; i += record_size) {
+        Record *record = new Record();
+
+        fixed_len_read(&(buf[i]), record_size, record);
+
+        append_record(page, record);
+    }
+    
+    // Update page meta data
+    page->total_slots = page_size / record_size;
+    page->slots_used = used_space / record_size;
+    page->page_size = page_size;
+    page->slot_size = record_size;
+    
 }
+
 /*****************************************************************
  *
  * HELPERS
