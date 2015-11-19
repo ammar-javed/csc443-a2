@@ -69,8 +69,10 @@ void run_tests(int page_size, int slot_size) {
         cout << "    Size of first record: " << first_record->size() << endl;
         cout << "\n    Inserting 'Yoo!' into first record..." << endl;
     }
+
+    char yo[] = "Yooooooo!";
     
-    (*first_record)[0] = "Yoo!";
+    fixed_len_read(yo, 10, first_record);
     
     if (verbose) {
         cout << "    First attribute in First record now points to: " << first_record->front() << endl;

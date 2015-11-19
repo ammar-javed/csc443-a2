@@ -210,7 +210,7 @@ void init_fixed_len_page(Page **page, int page_size, int slot_size){
 
 
     for (int i = 0; i < (*page)->total_slots; i++) {
-        (*page)->records->push_back( new Record(NUM_ATTRIBUTES, "0000000000"));
+        (*page)->records->push_back( new Record());
     }
 }
 
@@ -243,8 +243,14 @@ int fixed_len_sizeof(Record *record){
  * Serialize the record to a byte array to be stored in buf.
  */
 void fixed_len_write(Record *record, char *buf) {
-    for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
-        strcat(buf, (*attr));
+    if (record->size() > 0 ) {
+        for( attr = (*record).begin(); attr != (*record).end(); ++attr) {
+            strcat(buf, (*attr));
+        }
+    } else {
+        char *empty = new char[NUM_ATTRIBUTES * ATTRIBUTE_SIZE];
+        memset(empty, '0', NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
+        strcat(buf, empty);
     }
 }
 
@@ -262,6 +268,11 @@ void fixed_len_read(char *buf, int size, Record *record, int csv) {
         attribute = new char[11];
         memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
         attribute[10] = '\0';
+
+        if (strcmp(attribute, "0") == 0) {
+            break;
+        }
+
         read += ATTRIBUTE_SIZE;
         if (csv)
             read += sizeof(char);
@@ -299,8 +310,17 @@ int add_fixed_len_page(Page *page, Record *r) {
     return -1;  // No more free slots available
     }
 
-    // Assuming that first slot available is at index page->slots_used
-    return page->slots_used;
+    vector<Record*> records = (*(page->records));
+    int ret = 0;
+    // Iterate over all the vectors in the Records array in Page,
+    // return the index of the first vector whose size() == 0
+    for (int slot = 0; slot < records.size(); slot++) {
+        if ( records[slot]->size() == 0 ) {
+            ret = slot;
+            break;
+        }
+    }
+    return ret;
 }
 
 /*
@@ -319,9 +339,11 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  * Write the record at the end of page this function assumes you 
  * will ALWAYS be able to fit a record at the end.
  */
-void append_record(Page *page, Record *r){
+void append_record(Page *page, Record *r, int increment_counter){
 
     page->records->push_back(r);
+    if (increment_counter)
+        page->slots_used++;
 }
 
 /**
@@ -407,24 +429,26 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
     // Calculate slot size
     int64 record_size = NUM_ATTRIBUTES * ATTRIBUTE_SIZE;
 
-    // Optimal space to read in
-    int64 used_space = page_size - free_space;
-    char *buf = new char[used_space];
+    // Read in entire page 
+    char *buf = new char[heapfile->page_size];
+    memset(buf, '\0', heapfile->page_size);
 
-    fread(buf, sizeof(char), used_space, heapfile->file_ptr);
+    fread(buf, sizeof(char), heapfile->page_size, heapfile->file_ptr);
+
+    // We will count how many slots are in use
+    page->slots_used = 0;
 
     // For each record, deserialize it and put it in the page
-    for (int i = 0; i < used_space; i += record_size) {
+    for (int i = 0; i < heapfile->page_size; i += record_size) {
         Record *record = new Record();
 
         fixed_len_read(&(buf[i]), record_size, record);
 
-        append_record(page, record);
+        append_record(page, record, 1);
     }
     
     // Update page meta data
     page->total_slots = page_size / record_size;
-    page->slots_used = used_space / record_size;
     page->page_size = page_size;
     page->slot_size = record_size;
 

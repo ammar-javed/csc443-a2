@@ -151,3 +151,9 @@ Offset append_empty_page_to_file(FILE *file, int page_size);
  * to the end of the file
  */
 void append_empty_directory_to_file(FILE *file, int page_size);
+
+/*
+ * Write the record at the end of page this function assumes you 
+ * will ALWAYS be able to fit a record at the end.
+ */
+void append_record(Page *page, Record *r, int increment_counter = 0);

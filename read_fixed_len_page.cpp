@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
 
                 fixed_len_read(&(recordsBuffer[i]), page->slot_size, record);
 
-                append_record(page, record);
+                append_record(page, record, 0);
                 
                 total_records++;
             }

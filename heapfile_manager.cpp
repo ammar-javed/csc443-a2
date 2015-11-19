@@ -4,7 +4,7 @@
 int main(int argc, char** argv) {
     if(argc < 2) {
         cout << "ERROR: Invalid number of arguments. Please use the following format:" << endl;
-        cout << "heap_tester <heap_filee> [-v verbose]" << endl;
+        cout << "heap_tester <heap_file> [-v verbose]" << endl;
         return EXIT_FAILURE;
     }
 
