@@ -341,10 +341,10 @@ void write_fixed_len_page(Page *page, int slot, Record *r){
  * Write the record at the end of page this function assumes you 
  * will ALWAYS be able to fit a record at the end.
  */
-void append_record(Page *page, Record *r, int increment_counter){
+void append_record(Page *page, Record *r){
 
     page->records->push_back(r);
-    if (increment_counter)
+    if (r->size())
         page->slots_used++;
 }
 
@@ -445,10 +445,7 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
         Record *record = new Record();
 
         fixed_len_read(&(buf[i]), record_size, record);
-        if (record->size() > 0)
-            append_record(page, record, 1);
-        else 
-            append_record(page, record, 0);
+        append_record(page, record);
     }
     
     // Update page meta data

@@ -68,7 +68,6 @@ int main(int argc, char** argv) {
                 fixed_len_read(&(buffer[i]), record_size_csv, record, 1); 
 
                 append_record(page, record);
-                page->slots_used++;
                 total_records++;
             }
 
