@@ -36,7 +36,13 @@ insert.o: insert.cpp
 insert: insert.cpp insert.o
 	$(CC) -o bin/$@ insert.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert
+select.o: select.cpp
+	$(CC) -o select.o -c select.cpp
+
+select: select.cpp select.o
+	$(CC) -o bin/$@ select.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert select
 
 clean:
 	rm *.o bin/*
