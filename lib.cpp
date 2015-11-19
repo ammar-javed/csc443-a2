@@ -296,6 +296,41 @@ void update_directory_entry_of_pageID(FILE *file, PageID pid, int page_size, int
 }
 
 
+/*
+ * Returns true if the pageID is valid and false otherwise
+ */
+int validate_page_id(Heapfile *heapfile, PageID pid){
+
+    int page_size = heapfile->page_size;
+
+    Offset page_offset = get_page_offset_from_pid(pid, page_size);
+
+    Offset last_dir_offset = heapfile->last_directory_offset;
+    Offset dir_offset = get_dir_offset_of_page_offset(page_offset, page_size);
+
+    if (dir_offset < last_dir_offset){
+        // All directories before the last directory should be at its full
+        // capacity, so the page offset is valid
+        return true;
+    } else if (dir_offset == last_dir_offset){
+        int slot = get_slot_number_of_page_offset(page_offset, page_size);
+    
+        forward_file_ptr_to_directory_entry(heapfile->file_ptr, dir_offset, slot, page_size);
+        int recorded_page_offset;
+        fread(&recorded_page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
+
+        if (page_offset == recorded_page_offset){
+            // The page offset must be the same when reading the directory entry
+            return 1;
+        } else {
+            // If page_offset == 0, then we haven't written to it yet.
+            // if page_offset is something else, then there's a mismatch
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+}
 
 /*****************************************************************
  *
