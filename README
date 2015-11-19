@@ -1,3 +1,20 @@
 CSC443 Assignment 2 Fall 2015
 
 http://www.cdf.toronto.edu/~csc443h/fall/posted_assignments/a2/a2.html
+
+Note (For markers):
+
+Some executables output the 
+
+    NUMBER OF RECORDS: 
+    NUMBER OF PAGES: 
+    Time:
+
+only if the verbose flag [ -v ] is specified at the end of the command. 
+That decision was made since it was not specified in the assignment to output
+such information everytime the function was run, and was only relevant when we
+were doing the experiments.
+
+e.g. csv2heapfile will only putput that information if run like :
+
+./bin/csv2heapfile <csv_file> <heap_file> <page_size> -v
