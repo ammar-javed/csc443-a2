@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "cmnhdr.hpp"
+#include "math.h"
 
 
 /*****************************************************************
@@ -485,6 +486,83 @@ void dump_page_records(Page *page) {
         }
     }
 }
+
+Offset get_page_offset_from_pid(PageID pid, int page_size){
+    
+    int total_dir_entries = get_total_directory_entries(page_size);
+
+    return pid + ceil ((pid + 1)/total_dir_entries);
+
+}  
+
+// 0 2 4 6 8 10 12 13  <-- memory
+// - 0 1 - 2  3  -  4 <-- pid
+// 0 1 2 3 4  5  6  7 <-- page_offset
+
+Offset get_dir_entry_of_page_offset(Offset page_offset, int page_size){
+    int total_dir_entries = get_total_directory_entries(page_size);
+    int page_block_size = total_dir_entries + 1;
+
+    int total_dirs_needed = ceil(page_offset / page_block_size);
+    int dir_num = total_dir_entries - 1;
+    int dir_offset = dir_num * page_block_size;
+    return dir_offset;
+}
+
+int get_slot_number_of_page_offset(Offset page_offset, int page_size){
+    Offset dir_offset = get_dir_entry_of_page_offset(page_offset, page_size);
+
+    int slot = (page_offset - dir_offset) / page_size - 1;
+    return slot;
+
+}
+
+void forward_file_ptr_to_start_of_directory(FILE *file, Offset dir_offset, int page_size){
+    fseek(file, page_size * dir_offset, SEEK_SET);
+}
+
+/*
+ * Pre-condition, the file pointer has to be at the beginning of the directory
+ */
+void forward_file_ptr_to_directory_entry_slot_from_directory(FILE *file,int slot){
+    fseek(file, (slot * OFFSET_SIZE) + OFFSET_SIZE, SEEK_CUR);
+}
+
+void forward_file_ptr_to_directory_entry(FILE *file, Offset dir_offset, int slot, int page_size){
+    forward_file_ptr_to_start_of_directory(file, dir_offset, page_size);
+    forward_file_ptr_to_directory_entry_slot_from_directory(file, slot);
+
+}
+
+void forward_file_ptr_to_page_offset(FILE *file, Offset page_offset, int page_size){
+    fseek(file, page_offset * page_size, SEEK_SET);
+}
+
+void forward_file_ptr_to_start_of_PID(FILE *file, PageID pid, int page_size){
+    Offset page_offset = get_page_offset_from_pid(page_size, pid);
+    forward_file_ptr_to_page_offset(file, page_offset, page_size);
+}
+
+void update_directory_entry_of_pageID(FILE *file, PageID pid, int page_size, int record_deleted){
+    int page_offset = get_page_offset_from_pid(pid, page_size);
+    Offset dir_offset = get_dir_entry_of_page_offset(page_offset, page_size);
+    int slot = get_slot_number_of_page_offset(page_offset, page_size);
+    forward_file_ptr_to_directory_entry(file, dir_offset, slot, page_size);
+
+    fseek(file, OFFSET_SIZE, SEEK_CUR);
+    int free_space;
+    fread(&free_space, OFFSET_SIZE, 1, file);
+    if (record_deleted){
+        free_space = free_space - page_size;
+    } else {
+        free_space = free_space + page_size;
+    }
+
+    fseek(file, 0 - OFFSET_SIZE, SEEK_CUR);
+    fwrite(&free_space, OFFSET_SIZE, 1, file);
+
+}
+
 
 /*****************************************************************
  *
