@@ -71,6 +71,15 @@ int main(int argc, char** argv) {
                 page->slots_used++;
                 total_records++;
             }
+
+            // If we didn't read in enough records to fill up the page
+            // fill the rest of the slots with empty records
+            if (page->records->size() != page->total_slots) {
+                int64 left = page->total_slots - page->records->size();
+                for (int j = 0; j < left; j++) {
+                    append_record(page, new Record());
+                }
+            }
  
             // Allocate a page in the heapfile
             Offset page_offset = alloc_page(hf);

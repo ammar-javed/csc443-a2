@@ -269,13 +269,14 @@ void fixed_len_read(char *buf, int size, Record *record, int csv) {
         memcpy( attribute, &((char *) buf)[read], ATTRIBUTE_SIZE );
         attribute[10] = '\0';
 
-        if (strcmp(attribute, "0") == 0) {
+        if (strcmp(attribute, "0000000000") == 0) {
             break;
         }
 
         read += ATTRIBUTE_SIZE;
         if (csv)
             read += sizeof(char);
+
         (*record).push_back(attribute);
     }
 }
@@ -307,7 +308,7 @@ int fixed_len_page_freeslots(Page *page) {
  */
 int add_fixed_len_page(Page *page, Record *r) {
     if (fixed_len_page_freeslots(page) <= 0){
-    return -1;  // No more free slots available
+        return -1;  // No more free slots available
     }
 
     vector<Record*> records = (*(page->records));
@@ -467,17 +468,19 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
  */
 void dump_page_records(Page *page) {
     int atts;
-    for (int i=0; i < page->slots_used; i++) {
+    vector<Record*> records = (*(page->records));
+    for (int i=0; i < records.size(); i++) {
         atts = 0;
-        vector<Record*> records = (*(page->records));
-        for ( attr = records[i]->begin(); attr != records[i]->end(); ++attr) {
-            cout << (*attr);
-            if ( atts != 99 ) {
-                cout << ",";
-            } else if (atts == 99) {
-                cout << endl;
+        if (records[i]->size() != 0) {
+            for ( attr = records[i]->begin(); attr != records[i]->end(); ++attr) {
+                cout << (*attr);
+                if ( atts != 99 ) {
+                    cout << ",";
+                } else if (atts == 99) {
+                    cout << endl;
+                }
+                atts++;
             }
-            atts++;
         }
     }
 }

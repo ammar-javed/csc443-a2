@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	        		cout << "    Initialized page's used slots " << p->slots_used<< endl;
 	        		cout << "    Initialized page's slot size " << p->slot_size << endl;
     			}
-
+                
     			dump_page_records(p);
     		}
     	}
