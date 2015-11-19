@@ -30,7 +30,13 @@ scan.o: scan.cpp
 scan: scan.cpp scan.o
 	$(CC) -o bin/$@ scan.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan
+insert.o: insert.cpp
+	$(CC) -o insert.o -c insert.cpp
+
+insert: insert.cpp insert.o
+	$(CC) -o bin/$@ insert.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert
 
 clean:
 	rm *.o bin/*

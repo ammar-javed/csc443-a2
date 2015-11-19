@@ -444,15 +444,16 @@ void read_page(Heapfile *heapfile, PageID pid, Page *page){
         Record *record = new Record();
 
         fixed_len_read(&(buf[i]), record_size, record);
-
-        append_record(page, record, 1);
+        if (record->size() > 0)
+            append_record(page, record, 1);
+        else 
+            append_record(page, record, 0);
     }
     
     // Update page meta data
     page->total_slots = page_size / record_size;
     page->page_size = page_size;
     page->slot_size = record_size;
-
     delete[] buf;
     
 }
