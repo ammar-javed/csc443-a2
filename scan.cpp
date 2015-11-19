@@ -21,8 +21,6 @@ int main(int argc, char** argv) {
         cout << "Last directory offset: " << heapfile->last_directory_offset << endl;
     }
 
-
-
     Offset current_dir_offset = 0;
     Offset page_offset;
     Page *p;

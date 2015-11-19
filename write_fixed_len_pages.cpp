@@ -202,8 +202,11 @@ int main(int argc, char** argv) {
 
 	// Write out the current buffer, since either it was not completely filled, or the very last read
 	// caused it to be full, but it wasn't written out to allocate a new page for a new record.
-    outBuffer = new char[page->page_size];
-    outBuffer[0] = '\0';
+
+    // This buffer was not accounting for null terminators strcat adds on at the end,
+    // so freeing it on CDF was an issue
+    outBuffer = new char[page->page_size + page->total_slots];
+    memset(outBuffer, '\0', page->page_size);
 
     binout.write(reinterpret_cast<char *> (&(page->total_slots)), sizeof(page->total_slots));
     binout.write(reinterpret_cast<char *> (&(page->slots_used)), sizeof(page->slots_used));
@@ -225,12 +228,12 @@ int main(int argc, char** argv) {
     cout << "NUMBER OF RECORDS: " << total_records << endl;
     cout << "NUMBER OF PAGES: " << total_pages << endl;
     cout << "Time: " << total_millisec << " MS" << endl;
-    delete[] outBuffer;
-    free_page(&page, page->slots_used);
 
+    free_page(&page, page->slots_used);
     csvin.close();
     binout.close();
 
+    delete[] outBuffer;
     delete[] buffer;
 
     return EXIT_SUCCESS;
