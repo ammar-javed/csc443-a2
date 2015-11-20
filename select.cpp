@@ -40,14 +40,20 @@ int main(int argc, char** argv) {
     	return EXIT_FAILURE;
     }
 
+    // Files are open, begin timing
+    struct timeval start, end, result;
+    gettimeofday(&start, NULL);
+
     int attribute_id =  atoi(argv[2]);
-    char *start = argv[3];
-    char *end = argv[4];
+    char *start_char = argv[3];
+    char *end_char = argv[4];
     int page_size =  atoi(argv[5]);
 
     // Initialize and read in the heapfile.
     Heapfile *heapfile = new Heapfile();
+
     init_existing_heapfile(heapfile, page_size, file_ptr);
+
 	if (verbose){
         cout << "Page size of heapfile: " << heapfile->page_size << endl;
         cout << "Last directory offset: " << heapfile->last_directory_offset << endl;
@@ -108,7 +114,7 @@ int main(int argc, char** argv) {
 	        		cout << "    Initialized page's slot size " << page->slot_size << endl;
     			}
                 
-    			int read_att = print_selected_records(page, start, end, attribute_id);
+    			int read_att = print_selected_records(page, start_char, end_char, attribute_id);
     			selected_atts += read_att;
     		} else {
     			if (verbose){
@@ -120,10 +126,17 @@ int main(int argc, char** argv) {
     	current_dir_offset = next_dir;
     }
 
-    if (verbose) {
-        // Outputting the relevant metrics 
-        cout << endl << "NUMBER OF ATTRIBUTES SELECTED: " << selected_atts << endl;
-    }
+
+    //Finished writing last page
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total_millisec = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
+
+    // Outputting the relevant metrics as per assignment requirements
+    cout << endl << "NUMBER OF ATTRIBUTES SELECTED: " << selected_atts << endl;
+    cout << "PAGE SIZE: " << page_size << endl;
+    cout << "Time: " << total_millisec << " MS" << endl;
+
 
     // Memory Cleaning up
     free_page(&page, page->slots_used);
