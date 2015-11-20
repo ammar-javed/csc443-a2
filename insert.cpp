@@ -48,19 +48,13 @@ int main(int argc, char** argv) {
     // Initial read
     csv_in.read(buffer, record_size_csv);
 
-    cout << " NOTE : " << record_size_csv * page_size / record_size << " bytes read " << endl;
     Offset next_dir = 1;
     while (csv_in.gcount()) {
-    cout << "insert ** current_dir_offset " << current_dir_offset << endl;
-    cout << "insert ** next_dir offset: " << next_dir << endl;
     
-
         // For every 1100 byte record we read, create a Record
         // Loop #2
         int i = 0;
         while ((current_dir_offset != 0 || next_dir != 0)){
-
-            cout << "insert ** in #Loop 2" << endl;
 
             if (verbose){
                 cout << "Reading Directory: " << current_dir_offset << endl;
@@ -98,11 +92,6 @@ int main(int argc, char** argv) {
                 }
                 
                 if (free_space/record_size > 0){ 
-                    cout << "insert ** slot " << slot << " at directory " << current_dir_offset << " has space " << endl;
-                    cout << "Determining free space : " << free_space/record_size << endl;
-                    if (verbose){
-                        cout << "    The slot has a page with content. And is empty" << endl;
-                    }
                     
                     // Get the data in to a page struct to determine free slots
                     init_page(&page);
@@ -117,7 +106,6 @@ int main(int argc, char** argv) {
                         cout << "    Initialized page's slot size " << page->slot_size << endl;
                     }
 
-                    cout << "WHATTT" << fixed_len_page_freeslots(page) << endl;
                     while (fixed_len_page_freeslots(page) > 0  && csv_in.gcount()){
 
                         //New Record with the csv information in it
@@ -128,14 +116,9 @@ int main(int argc, char** argv) {
                             cout << "    Writting record to page... " << endl;
                         }
                         int free_slot = add_fixed_len_page(page, record);
-                        cout << "free slot" << free_slot<< endl;
 
-                        write_fixed_len_page(page, free_slot, record);
-                        cout << "Wrote record to page" << endl;
+                        write_fixed_len_page(page, free_slot, record);                        
                         
-                        
-                        cout << "wrote page to file" << endl;
-
                         if (verbose){
                             cout << "        Page offset of page with free slot" << page_offset << endl;
                             cout << "        Free slot : " << free_slot << endl;
@@ -146,10 +129,7 @@ int main(int argc, char** argv) {
                         csv_in.read(buffer, record_size_csv);                            
                     }
                     write_page(page, heapfile, page_offset);
-                    cout << " PAGE CONTENTS" << endl;
-                    dump_page_records(page);
-                } else {
-                    cout << "insert ** slot " << slot << " at directory " << current_dir_offset << " has no space " << endl;
+
                 }
             }
             current_dir_offset = next_dir;
@@ -165,7 +145,6 @@ int main(int argc, char** argv) {
             page_offset = alloc_page(heapfile);
             current_dir_offset = heapfile->last_directory_offset;
             next_dir = 0;
-
 
             if (verbose){
                 cout << "        New directory offset" << current_dir_offset << endl;

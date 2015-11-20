@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
                 binout.write(reinterpret_cast<char *> (&(page->page_size)), sizeof(page->page_size));
                 binout.write(reinterpret_cast<char *> (&(page->slot_size)), sizeof(page->slot_size));
 
-                outBuffer = new char[page->page_size];
+                outBuffer = new char[page->page_size + page->total_slots];
                 outBuffer[0] = '\0';
 
                 for (int s = 0; s < page->total_slots; s++) {

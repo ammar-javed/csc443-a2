@@ -503,6 +503,21 @@ void append_record(Page *page, Record *r){
 
 /*****************************************************************
  *
+ * UPDATING RECORDS
+ *
+ *****************************************************************/
+
+void update_record(Record *r, int64 attr, char* new_value) {
+
+        char* attribute = new char[11];
+        memcpy( attribute, new_value, ATTRIBUTE_SIZE );
+        attribute[10] = '\0';
+        delete[] (*r)[attr];
+        (*r)[attr] = attribute;
+}
+
+/*****************************************************************
+ *
  * DELETING RECORDS
  *
  *****************************************************************/
