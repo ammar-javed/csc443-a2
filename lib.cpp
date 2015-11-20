@@ -198,8 +198,7 @@ Offset append_empty_page_to_file(FILE *file, int page_size){
 Offset get_page_offset_from_pid(PageID pid, int page_size){
     
     int total_dir_entries = get_total_directory_entries(page_size);
-
-    return pid + ceil ((pid + 1)/total_dir_entries);
+    return (pid + ceil ((pid + 1.0)/total_dir_entries));
 
 }  
 
@@ -215,9 +214,9 @@ Offset get_dir_offset_of_page_offset(Offset page_offset, int page_size){
     int total_dir_entries = get_total_directory_entries(page_size);
     int page_block_size = total_dir_entries + 1;
 
-    int total_dirs_needed = ceil(page_offset / page_block_size);
-    int dir_num = total_dir_entries - 1;
-    int dir_offset = dir_num * page_block_size;
+    int total_dirs_needed = ceil((float)page_offset / page_block_size);
+    int dir_num = total_dirs_needed - 1;
+    Offset dir_offset = dir_num * page_block_size;
     return dir_offset;
 }
 
@@ -227,7 +226,7 @@ Offset get_dir_offset_of_page_offset(Offset page_offset, int page_size){
 int get_slot_number_of_page_offset(Offset page_offset, int page_size){
     Offset dir_offset = get_dir_offset_of_page_offset(page_offset, page_size);
 
-    int slot = (page_offset - dir_offset) / page_size - 1;
+    int slot = (page_offset - dir_offset) - 1;
     return slot;
 
 }
@@ -243,7 +242,7 @@ void forward_file_ptr_to_start_of_directory(FILE *file, Offset dir_offset, int p
  * Pre-condition, the file pointer has to be at the beginning of the directory
  */
 void forward_file_ptr_to_directory_entry_slot_from_directory(FILE *file,int slot){
-    fseek(file, (slot * OFFSET_SIZE) + OFFSET_SIZE, SEEK_CUR);
+    fseek(file, (slot * OFFSET_SIZE * 2) + OFFSET_SIZE, SEEK_CUR);
 }
 
 /*
@@ -276,21 +275,42 @@ void forward_file_ptr_to_start_of_PID(FILE *file, PageID pid, int page_size){
  * a page size, if it is 0, incrememnt the free space.
  */
 void update_directory_entry_of_pageID(FILE *file, PageID pid, int page_size, int record_deleted){
-    int page_offset = get_page_offset_from_pid(pid, page_size);
+    
+
+    Offset page_offset = get_page_offset_from_pid(pid, page_size);
+
     Offset dir_offset = get_dir_offset_of_page_offset(page_offset, page_size);
+
+
     int slot = get_slot_number_of_page_offset(page_offset, page_size);
+
     forward_file_ptr_to_directory_entry(file, dir_offset, slot, page_size);
 
-    fseek(file, OFFSET_SIZE, SEEK_CUR);
-    int free_space;
+    int64 free_space;
+
+    // skip the page offset value;
+    Offset page_off;
+        fread(&page_off, OFFSET_SIZE, 1, file);
+
+    //fseek(file, OFFSET_SIZE, SEEK_CUR);
+
     fread(&free_space, OFFSET_SIZE, 1, file);
+
     if (record_deleted){
-        free_space = free_space - page_size;
+        free_space = free_space + (NUM_ATTRIBUTES * ATTRIBUTE_SIZE);
+
     } else {
-        free_space = free_space + page_size;
+        free_space = free_space - page_size;
+
     }
 
-    fseek(file, 0 - OFFSET_SIZE, SEEK_CUR);
+    page_offset = get_page_offset_from_pid(pid, page_size);
+    dir_offset = get_dir_offset_of_page_offset(page_offset, page_size);
+
+    fseek(file, dir_offset * page_size, SEEK_SET);
+    fseek(file, (slot * OFFSET_SIZE * 2 ) + OFFSET_SIZE, SEEK_CUR);
+    fseek(file,  OFFSET_SIZE, SEEK_CUR);
+
     fwrite(&free_space, OFFSET_SIZE, 1, file);
 
 }
@@ -306,6 +326,10 @@ int validate_page_id(Heapfile *heapfile, PageID pid){
     Offset page_offset = get_page_offset_from_pid(pid, page_size);
 
     Offset last_dir_offset = heapfile->last_directory_offset;
+
+
+
+
     Offset dir_offset = get_dir_offset_of_page_offset(page_offset, page_size);
 
     if (dir_offset < last_dir_offset){
@@ -314,11 +338,11 @@ int validate_page_id(Heapfile *heapfile, PageID pid){
         return true;
     } else if (dir_offset == last_dir_offset){
         int slot = get_slot_number_of_page_offset(page_offset, page_size);
-    
+
         forward_file_ptr_to_directory_entry(heapfile->file_ptr, dir_offset, slot, page_size);
+
         int recorded_page_offset;
         fread(&recorded_page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
-
         if (page_offset == recorded_page_offset){
             // The page offset must be the same when reading the directory entry
             return 1;
@@ -424,23 +448,9 @@ void fixed_len_read(char *buf, int size, Record *record, int csv) {
 
 /*****************************************************************
  *
- * WRITTING
+ * ADDING RECORDS
  *
  *****************************************************************/
-
-/*
- * Calculates the maximal number of records that fit in a page
- */
-int fixed_len_page_capacity(Page *page) {
-    return page->page_size / page->slot_size;
-}
-
-/*
- * Calculate the free space (number of free slots) in the page
- */
-int fixed_len_page_freeslots(Page *page) {
-    return page->total_slots - page->slots_used;
-}
 
 /*
  * Returns:
@@ -488,16 +498,49 @@ void append_record(Page *page, Record *r){
         page->slots_used++;
 }
 
+/*****************************************************************
+ *
+ * DELETING RECORDS
+ *
+ *****************************************************************/
+
+/*
+ * Delete/clear the record
+ */
+void delete_record_at_slot(Record *r) {
+    r->clear();
+}
+
+/*****************************************************************
+ *
+ * WRITTING
+ *
+ *****************************************************************/
+
+/*
+ * Calculates the maximal number of records that fit in a page
+ */
+int fixed_len_page_capacity(Page *page) {
+    return page->page_size / page->slot_size;
+}
+
+/*
+ * Calculate the free space (number of free slots) in the page
+ */
+int fixed_len_page_freeslots(Page *page) {
+    return page->total_slots - page->slots_used;
+}
+
 /**
  * Write a page from memory to disk
  */
-void write_page(Page *page, Heapfile *heapfile, PageID pid){
+void write_page(Page *page, Heapfile *heapfile, Offset pid){
 
     int page_size = heapfile->page_size;
 
     // Go to the directory entry to insert the metadata
     int total_dir_entries =  get_total_directory_entries(page_size);
-    Offset directory_num = pid / total_dir_entries;
+    Offset directory_num = pid / (total_dir_entries + 1);
     fseek(heapfile->file_ptr, page_size * (total_dir_entries + 1) * directory_num, SEEK_SET);
 
     Offset directory_offset = (total_dir_entries + 1) * directory_num;
@@ -544,7 +587,7 @@ void read_fixed_len_page(Page *page, int slot, Record *r){
 /**
  * Read a page into memory
  */
-void read_page(Heapfile *heapfile, PageID pid, Page *page){
+void read_page(Heapfile *heapfile, Offset pid, Page *page){
 
     int64 page_size = heapfile->page_size;
 

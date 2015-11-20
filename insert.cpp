@@ -4,7 +4,7 @@
 int main(int argc, char** argv) {
     if(argc < 4) {
         cout << "ERROR: Invalid number of arguments. Please use the following format:" << endl;
-        cout << "insert  <heapfile> <csv_file> <page_size>" << endl;
+        cout << "insert  <heapfile> <csv_file> <page_size> -v" << endl;
         return EXIT_FAILURE;
     }
 

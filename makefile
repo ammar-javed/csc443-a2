@@ -42,7 +42,13 @@ select.o: select.cpp
 select: select.cpp select.o
 	$(CC) -o bin/$@ select.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert select
+delete.o: delete.cpp
+	$(CC) -o delete.o -c delete.cpp
+
+delete: delete.cpp delete.o
+	$(CC) -o bin/$@ delete.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete
 
 clean:
 	rm *.o bin/*

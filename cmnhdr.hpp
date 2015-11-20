@@ -6,6 +6,7 @@ using namespace std;
 
 #define NUM_ATTRIBUTES 100
 #define ATTRIBUTE_SIZE 10
+#define DELIM ":"
 
 typedef int64_t Offset;
 typedef int64_t int64;
