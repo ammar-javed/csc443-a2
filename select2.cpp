@@ -41,6 +41,12 @@ int main(int argc, char** argv) {
     char *end_str = argv[4];
     int64 page_size = atoi(argv[5]);
 
+    // Structs for timing
+    struct timeval start, end, result;
+
+    // Files are open, begin timing
+    gettimeofday(&start, NULL);
+
     // Initialize and read in the heapfile.
     Heapfile *heapfile = new Heapfile();
 
@@ -64,6 +70,16 @@ int main(int argc, char** argv) {
 
         curr_block ++; 
 
+    }
+
+    //Finished writing last page
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total_millisec = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
+
+    if (verbose) {
+        // Outputting the relevant metrics 
+        cout << "Time: " << total_millisec << " MS" << endl;
     }
 
     // Memory Cleaning up

@@ -24,6 +24,12 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    // Structs for timing
+    struct timeval start, end, result;
+
+    // Files are open, begin timing
+    gettimeofday(&start, NULL);
+
     int64 record_size_csv = (NUM_ATTRIBUTES * ATTRIBUTE_SIZE) + (NUM_ATTRIBUTES);
 
 
@@ -74,6 +80,16 @@ int main(int argc, char** argv) {
 
     fseek(file_ptr, 0, SEEK_SET);
     fwrite(&total_blocks_written, OFFSET_SIZE, 1, file_ptr);
+
+    //Finished writing last page
+    gettimeofday(&end, NULL);
+    timersub(&end, &start, &result);
+    double total_millisec = (result.tv_sec * 1000.0) + (result.tv_usec / 1000.0);
+
+    if (verbose) {
+        // Outputting the relevant metrics 
+        cout << "Time: " << total_millisec << " MS" << endl;
+    }
 
     delete[] buffer;
     delete heapfile;
