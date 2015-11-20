@@ -48,7 +48,13 @@ delete.o: delete.cpp
 delete: delete.cpp delete.o
 	$(CC) -o bin/$@ delete.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete
+update.o: update.cpp
+	$(CC) -o update.o -c update.cpp
+
+update: update.cpp update.o
+	$(CC) -o bin/$@ update.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete update
 
 clean:
 	rm *.o bin/*

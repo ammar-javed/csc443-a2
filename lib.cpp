@@ -35,9 +35,7 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file){
 void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file){
     heapfile->page_size = page_size;
     heapfile->file_ptr = file;
-    cout << "here" << endl;
     fseek(file, 0, SEEK_SET);
-    cout << "here" << endl;
     Offset current_dir = 0;
     Offset next_dir;
     fread(&next_dir, OFFSET_SIZE, 1, file);
@@ -499,6 +497,21 @@ void append_record(Page *page, Record *r){
     page->records->push_back(r);
     if (r->size())
         page->slots_used++;
+}
+
+/*****************************************************************
+ *
+ * UPDATING RECORDS
+ *
+ *****************************************************************/
+
+void update_record(Record *r, int64 attr, char* new_value) {
+
+        char* attribute = new char[11];
+        memcpy( attribute, new_value, ATTRIBUTE_SIZE );
+        attribute[10] = '\0';
+        delete[] (*r)[attr];
+        (*r)[attr] = attribute;
 }
 
 /*****************************************************************
