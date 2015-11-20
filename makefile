@@ -66,7 +66,7 @@ select3.o: select3.cpp
 select3: select3.cpp select3.o
 	$(CC) -o bin/$@ select3.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete csv2colstore select2
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete csv2colstore select2 select3
 
 clean:
 	rm *.o bin/*
