@@ -23,10 +23,11 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file){
     heapfile->file_ptr = file;
     heapfile->last_directory_offset = 0;
 
+
     fseek(file, 0, SEEK_SET);
 
-    append_empty_directory_to_file(file, page_size);
 
+    append_empty_directory_to_file(file, page_size);
     // Set the file pointer to the beginning of the page
     fseek(file, 0, SEEK_SET);
 }
@@ -34,14 +35,17 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file){
 void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file){
     heapfile->page_size = page_size;
     heapfile->file_ptr = file;
-
+    cout << "here" << endl;
     fseek(file, 0, SEEK_SET);
-
+    cout << "here" << endl;
     Offset current_dir = 0;
     Offset next_dir;
     fread(&next_dir, OFFSET_SIZE, 1, file);
-
+    cout << "current dir " << current_dir << ", next_dir : " << next_dir;
     while(next_dir != 0){
+    cout << "here" << endl;
+        cout << "current dir " << current_dir << ", next_dir : " << next_dir;
+
         fseek(file, page_size * next_dir, SEEK_SET);
         current_dir = next_dir;
         fread(&next_dir, OFFSET_SIZE, 1, file);
@@ -75,6 +79,7 @@ void append_empty_directory_to_file(FILE *file, int page_size){
     // The first 8 bytes in the file show indicate what the next
     // page offset is. Since there is no next directory yet, we
     // set it to be 0
+     cout <<"append_empty_directory: file position of start of new dir  " << ftell(file) << endl;
     Offset next_directory_offset = 0;
     fwrite(&next_directory_offset, OFFSET_SIZE, 1, file);
 
@@ -84,8 +89,10 @@ void append_empty_directory_to_file(FILE *file, int page_size){
     Offset initial_dirEntry_offset = 0;
     Offset initial_dirEntry_size = 0;
     for (int i=0; i < total_dir_entries; i++){
+        cout <<"append_emptry_dirfile position of dir entry  " << i << " is " << ftell(file) << endl;
         fwrite(&initial_dirEntry_offset, OFFSET_SIZE, 1, file);
         fwrite(&initial_dirEntry_size, OFFSET_SIZE, 1, file);
+        cout <<"append_empty_directory " << initial_dirEntry_offset << endl;
     }
 
     int padding = page_size - (OFFSET_SIZE * total_dir_entries * 2) - OFFSET_SIZE;
@@ -104,6 +111,7 @@ PageID alloc_page(Heapfile *heapfile){
 
     // The tail of the directory linked list
     Offset dir_offset = heapfile->last_directory_offset;
+    cout << "alloc_page last_directory_offset is " << dir_offset << endl;
 
     // Forward the file to the directory and read the directory entries
     fseek(heapfile->file_ptr, dir_offset*heapfile->page_size, SEEK_SET);
@@ -119,7 +127,13 @@ PageID alloc_page(Heapfile *heapfile){
     fread(&page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
 
     for (int i = 0; i < total_dir_entries; i++){
+        if (page_offset > 120){
+            cout << "directory_entry " << i << endl;
+            cout << " page offset " << page_offset << endl;
+        }
         if (page_offset == 0){
+
+            cout << " page offset assigning " << page_offset << endl;
             // Create a new page and write its initialized data in to
             // the end of the file.
             Offset new_page_offset = append_empty_page_to_file(
@@ -133,10 +147,14 @@ PageID alloc_page(Heapfile *heapfile){
             // Skip to the current directory entry
             fseek(heapfile->file_ptr, OFFSET_SIZE + (i * OFFSET_SIZE * 2), SEEK_CUR);
 
+    
+            cout << "alloc_page : The position of the directory entry " << i << " is " << ftell(heapfile->file_ptr) << endl;
             // Write the new page offset and set free space
             fwrite(&new_page_offset, OFFSET_SIZE, 1, heapfile->file_ptr);
             fwrite(&heapfile->page_size, OFFSET_SIZE, 1, heapfile->file_ptr);
-
+            if (new_page_offset > 120 ){
+            cout << "   assigning page offset " << new_page_offset << endl;
+            }
             return new_page_offset;
         }
         // Skip the free size offset and read in the next page_offset
@@ -150,10 +168,13 @@ PageID alloc_page(Heapfile *heapfile){
     Offset new_dir_offset = ftell(heapfile->file_ptr)/ heapfile->page_size;
     append_empty_directory_to_file(heapfile->file_ptr, heapfile->page_size);
 
+    cout << "Offset of end of the file " << new_dir_offset << endl;
+
     // Nowe we also append a new page. Since we know that the directory is
     // empty, there is no need to traverse through directory entries.
     Offset new_page_offset = append_empty_page_to_file(
                     heapfile->file_ptr, heapfile->page_size);
+    cout << "Offset of the new page " << new_page_offset << endl;
 
     // To the beginning of the new directory
     fseek(heapfile->file_ptr, new_dir_offset*heapfile->page_size, SEEK_SET);
@@ -179,8 +200,11 @@ PageID alloc_page(Heapfile *heapfile){
 Offset append_empty_page_to_file(FILE *file, int page_size){
 
     fseek(file, 0, SEEK_END);
+    cout << "append_empty_page position of end of the file " << ftell(file) << endl;
 
     Offset new_page_offset = ftell(file)/ page_size;
+    cout << "append_empty_page Offset of the new page" << new_page_offset << endl;
+
 
     char *initializer = new char[page_size];
     memset(initializer, '0', page_size);
@@ -197,9 +221,9 @@ Offset append_empty_page_to_file(FILE *file, int page_size){
  */
 Offset get_page_offset_from_pid(PageID pid, int page_size){
     
-    int total_dir_entries = get_total_directory_entries(page_size);
+    int total_dir_entries = get_total_directory_entries (page_size);
 
-    return pid + ceil ((pid + 1)/total_dir_entries);
+    return (pid + ceil ((pid + 1.0)/total_dir_entries));
 
 }  
 
@@ -215,7 +239,7 @@ Offset get_dir_offset_of_page_offset(Offset page_offset, int page_size){
     int total_dir_entries = get_total_directory_entries(page_size);
     int page_block_size = total_dir_entries + 1;
 
-    int total_dirs_needed = ceil(page_offset / page_block_size);
+    int total_dirs_needed = ceil((float)page_offset / page_block_size);
     int dir_num = total_dir_entries - 1;
     int dir_offset = dir_num * page_block_size;
     return dir_offset;
@@ -494,11 +518,14 @@ void append_record(Page *page, Record *r){
 void write_page(Page *page, Heapfile *heapfile, PageID pid){
 
     int page_size = heapfile->page_size;
-
+    cout << "wirte- page : Offset of the page: " << pid << endl;
     // Go to the directory entry to insert the metadata
     int total_dir_entries =  get_total_directory_entries(page_size);
-    Offset directory_num = pid / total_dir_entries;
+    Offset directory_num = pid / (total_dir_entries + 1);
+    cout << "wirte- page : directory_num for directory" << directory_num << endl;
+
     fseek(heapfile->file_ptr, page_size * (total_dir_entries + 1) * directory_num, SEEK_SET);
+    cout << "wirte- page : position of start of directory entry: " << ftell(heapfile->file_ptr) << endl;
 
     Offset directory_offset = (total_dir_entries + 1) * directory_num;
     Offset directory_entry_slot = pid - directory_offset - 1;
