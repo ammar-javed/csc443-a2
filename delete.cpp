@@ -4,7 +4,7 @@
 int main(int argc, char** argv) {
     if(argc < 4) {
         cout << "ERROR: Invalid number of arguments. Please use the following format:" << endl;
-        cout << "delete <heapfile> <record_id: page_id:slot_number> <page_size> [-v]" << endl;
+        cout << "delete <heapfile> <record_id>:<page_id:slot_number> <page_size> [-v]" << endl;
         return EXIT_FAILURE;
     }
 

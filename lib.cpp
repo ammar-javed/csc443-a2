@@ -32,20 +32,20 @@ void init_heapfile(Heapfile *heapfile, int page_size, FILE *file){
     fseek(file, 0, SEEK_SET);
 }
 
-void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file){
+void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file, int colstore){
     heapfile->page_size = page_size;
     heapfile->file_ptr = file;
-    cout << "here" << endl;
     fseek(file, 0, SEEK_SET);
-    cout << "here" << endl;
     Offset current_dir = 0;
     Offset next_dir;
     fread(&next_dir, OFFSET_SIZE, 1, file);
-    while(next_dir != 0){
-        fseek(file, page_size * next_dir, SEEK_SET);
-        current_dir = next_dir;
-        fread(&next_dir, OFFSET_SIZE, 1, file);
-    }
+    if (!colstore){
+        while(next_dir != 0){
+            fseek(file, page_size * next_dir, SEEK_SET);
+            current_dir = next_dir;
+            fread(&next_dir, OFFSET_SIZE, 1, file);
+        }
+    } 
     heapfile->last_directory_offset = current_dir;
 }
 

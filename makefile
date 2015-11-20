@@ -48,7 +48,25 @@ delete.o: delete.cpp
 delete: delete.cpp delete.o
 	$(CC) -o bin/$@ delete.o
 
-all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete
+csv2colstore.o: csv2colstore.cpp
+	$(CC) -o csv2colstore.o -c csv2colstore.cpp
+
+csv2colstore: csv2colstore.cpp csv2colstore.o
+	$(CC) -o bin/$@ csv2colstore.o
+
+select2.o: select2.cpp
+	$(CC) -o select2.o -c select2.cpp
+
+select2: select2.cpp select2.o
+	$(CC) -o bin/$@ select2.o
+
+select3.o: select3.cpp
+	$(CC) -o select3.o -c select3.cpp
+
+select3: select3.cpp select3.o
+	$(CC) -o bin/$@ select3.o
+
+all: write_fixed_len_pages heapman_tester read_fixed_len_page csv2heapfile scan insert delete csv2colstore select2
 
 clean:
 	rm *.o bin/*

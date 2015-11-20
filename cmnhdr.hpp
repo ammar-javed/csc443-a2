@@ -121,6 +121,7 @@ void fixed_len_read(char *buf, int size, Record *record, int csv=0);
  * Initalize a heapfile to use the file and page size given.
  */
 void init_heapfile(Heapfile *heapfile, int page_size, FILE *file);
+void init_existing_heapfile(Heapfile *heapfile, int page_size, FILE *file, int colstore = false);
 
 /**
  * Allocate another page in the heapfile.  This grows the file by a page.
